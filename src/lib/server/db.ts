@@ -29,3 +29,9 @@ export function getDb(): SqliteDatabase {
 	}
 	return instance;
 }
+
+// Test-only hook: unit tests inject their migrated :memory: database here so
+// the repo layer keeps its SPEC-6.6 signature (userId first, no db param).
+export function setDbForTests(db: SqliteDatabase | null): void {
+	instance = db;
+}

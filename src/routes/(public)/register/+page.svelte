@@ -1,0 +1,159 @@
+<script lang="ts">
+	import { goto } from '$app/navigation';
+	import RecoveryScreen from '$lib/components/RecoveryScreen.svelte';
+	import { copy } from '$lib/shared/copy.js';
+	import type { PageData } from './$types';
+
+	let { data }: { data: PageData } = $props();
+
+	let username = $state('');
+	let password = $state('');
+	let inviteCode = $state('');
+	let ageConfirmed = $state(false);
+	let error = $state('');
+	let fieldErrors = $state<Record<string, string>>({});
+	let busy = $state(false);
+	let recoveryPhrase = $state('');
+
+	async function submit() {
+		busy = true;
+		error = '';
+		fieldErrors = {};
+		try {
+			const body: Record<string, unknown> = { username, password, ageConfirmed };
+			if (data.registrationMode === 'invite') body.inviteCode = inviteCode;
+			const response = await fetch('/api/auth/register', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(body)
+			});
+			const result = (await response.json().catch(() => null)) as {
+				user?: unknown;
+				recoveryPhrase?: string;
+				error?: string;
+				fields?: Record<string, string>;
+			} | null;
+			if (response.ok && result?.recoveryPhrase) {
+				recoveryPhrase = result.recoveryPhrase;
+				return;
+			}
+			fieldErrors = result?.fields ?? {};
+			error = Object.keys(fieldErrors).length === 0 ? (result?.error ?? copy.errors.generic) : '';
+		} catch {
+			error = copy.errors.generic;
+		} finally {
+			busy = false;
+		}
+	}
+</script>
+
+<svelte:head>
+	<title>{copy.auth.registerTitle} · {copy.appName}</title>
+</svelte:head>
+
+{#if recoveryPhrase}
+	<RecoveryScreen phrase={recoveryPhrase} onfinish={() => goto('/plans')} />
+{:else}
+	<div class="rounded-card border border-paper-dark bg-paper p-6 shadow-postit">
+		<h1 class="text-2xl font-bold text-ink">{copy.auth.registerTitle}</h1>
+		<p class="mt-1 text-sm text-ink-soft">{copy.auth.registerSubtitle}</p>
+
+		<form
+			class="mt-6 flex flex-col gap-4"
+			onsubmit={(event) => {
+				event.preventDefault();
+				submit();
+			}}
+		>
+			<label class="flex flex-col gap-1">
+				<span class="text-sm font-semibold text-ink">{copy.auth.username}</span>
+				<input
+					type="text"
+					class="rounded-lg border border-paper-dark bg-paper px-3 py-2 text-ink"
+					bind:value={username}
+					autocomplete="username"
+					autocapitalize="none"
+					minlength="3"
+					maxlength="24"
+					required
+					aria-describedby={fieldErrors.username ? 'register-username-error' : undefined}
+				/>
+				{#if fieldErrors.username}
+					<span id="register-username-error" class="text-sm text-ink" role="alert">
+						{fieldErrors.username}
+					</span>
+				{/if}
+			</label>
+
+			<label class="flex flex-col gap-1">
+				<span class="text-sm font-semibold text-ink">{copy.auth.password}</span>
+				<input
+					type="password"
+					class="rounded-lg border border-paper-dark bg-paper px-3 py-2 text-ink"
+					bind:value={password}
+					autocomplete="new-password"
+					minlength="10"
+					maxlength="128"
+					required
+					aria-describedby="register-password-hint{fieldErrors.password
+						? ' register-password-error'
+						: ''}"
+				/>
+				<span id="register-password-hint" class="text-xs text-ink-soft">
+					{copy.auth.passwordHint}
+				</span>
+				{#if fieldErrors.password}
+					<span id="register-password-error" class="text-sm text-ink" role="alert">
+						{fieldErrors.password}
+					</span>
+				{/if}
+			</label>
+
+			{#if data.registrationMode === 'invite'}
+				<label class="flex flex-col gap-1">
+					<span class="text-sm font-semibold text-ink">{copy.auth.inviteCode}</span>
+					<input
+						type="text"
+						class="rounded-lg border border-paper-dark bg-paper px-3 py-2 text-ink"
+						bind:value={inviteCode}
+						autocomplete="off"
+						required
+						aria-describedby={fieldErrors.inviteCode ? 'register-invite-error' : undefined}
+					/>
+					{#if fieldErrors.inviteCode}
+						<span id="register-invite-error" class="text-sm text-ink" role="alert">
+							{fieldErrors.inviteCode}
+						</span>
+					{/if}
+				</label>
+			{/if}
+
+			<label class="flex items-start gap-2">
+				<input type="checkbox" class="mt-0.5 h-5 w-5 accent-butter" bind:checked={ageConfirmed} />
+				<span class="text-sm text-ink">{copy.auth.ageCheckbox}</span>
+			</label>
+			{#if fieldErrors.ageConfirmed}
+				<p class="text-sm text-ink" role="alert">{fieldErrors.ageConfirmed}</p>
+			{/if}
+
+			{#if error}
+				<p class="text-sm font-semibold text-ink" role="alert">{error}</p>
+			{/if}
+
+			<button
+				type="submit"
+				class="mt-2 rounded-pill bg-butter px-5 py-2.5 text-sm font-bold text-ink shadow-postit transition-transform duration-fast hover:scale-[1.02] disabled:opacity-50"
+				disabled={busy || !ageConfirmed}
+			>
+				{copy.auth.registerSubmit}
+			</button>
+		</form>
+
+		<p class="mt-5 text-sm text-ink-soft">
+			{copy.auth.haveAccount}
+			<a class="font-semibold text-ink underline-offset-2 hover:underline" href="/login">
+				{copy.auth.loginLink}
+			</a>
+		</p>
+	</div>
+{/if}

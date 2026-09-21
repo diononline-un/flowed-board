@@ -1,7 +1,7 @@
 ---
 repo: flowed-board
 status: in-development
-progress: 12
+progress: 25
 tags: [sveltekit, svelte5, sqlite, selfhosted, docker]
 last_updated: 2026-09-21
 ---
@@ -12,6 +12,6 @@ Selbstgehostete App für Wochenplanung, Habit-Tracking und Journaling (SvelteKit
 
 ## next_steps
 - [x] M0: Skelett, Docker, DB + Migrations, /healthz, Design-Tokens, App-Shell, date.ts
-- [ ] M1: Auth (Username/Passwort/Recovery-Phrase), Sessions, Account-Seiten, Rechtsseiten
+- [x] M1: Auth (Username/Passwort/Recovery-Phrase), Sessions, Account-Seiten, Rechtsseiten
 - [ ] M2: Board (Post-its, Ziele, Key Results, Drag-and-Drop, Undo)
 - [ ] M3: Quick Capture (LLM-Parsing, Fallback, Consent)

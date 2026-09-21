@@ -12,3 +12,6 @@ One line per deviation from a SPEC-SOLL or conservative gap-fill (SPEC 0.1/0.2).
 - 2026-09-21 — Generated PWA icons (`static/icons/`) are gitignored and rebuilt via the `prebuild` hook, so `npm run build` includes `npm run icons` (SPEC 13.2).
 - 2026-09-21 — `svelte-dnd-action` installed in M0 per brief but unused until M2.
 - 2026-09-21 — npm cache redirected to workspace-local `.npm-cache` on this machine (user cache dir `~/.npm` has wrong ownership; gitignored, local-only concern).
+- 2026-09-21 — bip39 wordlist import uses `@scure/bip39/wordlists/english.js` with `.js` suffix (SPEC 3 names the path without it; the exports map of @scure/bip39 2.4.0 only exposes suffixed subpaths).
+- 2026-09-21 — `POST /api/account/logout-all` deletes all sessions *except the current one* (SPEC 7 table) instead of literally all (SPEC 6.4 sentence); the API contract is the more specific source, otherwise the endpoint would log out its own caller.
+- 2026-09-21 — `/impressum` and `/datenschutz` stay readable for logged-in users (SPEC 6.4 redirects `(public)` with user to `/plans`); legal information must remain reachable for everyone (SPEC 12), redirect exemption limited to these two pages.

@@ -132,6 +132,44 @@ export const copy = {
 		emptyTitle: 'Dein Kalender ist noch leer',
 		emptyHint: 'Post-its mit Datum erscheinen hier ganz von selbst.'
 	},
+	capture: {
+		fabLabel: 'Schnell erfassen',
+		sidebarPlaceholder: 'Was steht an? (Enter für Quick Capture)',
+		sidebarSubmit: 'Erfassen',
+		title: 'Quick Capture',
+		inputLabel: 'Was steht an?',
+		inputPlaceholder: 'z. B. Montag Sport, Dienstag und Mittwoch lernen',
+		send: 'Erstellen',
+		loading: 'Einen Moment — dein Text wird sortiert …',
+		consentTitle: 'KI-Erkennung erlauben?',
+		// SPEC 9.5 consent text; the provider name comes from the server
+		// (LLM_PROVIDER_NAME). '**' marks the bold part, rendered without HTML.
+		consentText: (provider: string) =>
+			`Dein Text wird zur Verarbeitung an einen externen KI-Anbieter (${provider}) gesendet, um Post-its zu erstellen. Journal-Einträge sind davon **nie** betroffen.`,
+		consentAllow: 'Erlauben',
+		consentDecline: 'Ohne KI nutzen',
+		previewHint: 'Prüfe die Zeilen — du kannst jede anpassen oder entfernen.',
+		fallbackHint:
+			'Automatische Erkennung war gerade nicht möglich — dein Text wurde als Post-it übernommen.',
+		limitReached:
+			'Für heute ist das Tageslimit erreicht — dein Text wird ohne KI als Post-it gespeichert.',
+		rowTitle: 'Titel',
+		rowDate: 'Datum',
+		rowTime: 'Uhrzeit (optional)',
+		removeRow: 'Zeile entfernen',
+		goalChip: (title: string) => `Ziel: ${title}`,
+		habitChip: (title: string) => `Habit: ${title}`,
+		apply: 'Übernehmen',
+		created: (count: number) =>
+			count === 1 ? '1 Post-it erstellt' : `${count} Post-its erstellt`,
+		undo: 'Rückgängig',
+		error: 'Das hat nicht geklappt — versuch es nochmal.',
+		settingsTitle: 'KI-Erkennung',
+		settingsHint:
+			'Wenn aktiv, wird dein Capture-Text zur Erkennung an den KI-Anbieter gesendet. Aus bedeutet: jeder Text wird unverändert als Post-it gespeichert. Journal-Einträge sind davon nie betroffen.',
+		settingsToggle: 'KI-Erkennung aktiv',
+		settingsSaved: 'Gespeichert.'
+	},
 	journal: {
 		title: 'Journal',
 		emptyTitle: 'Noch keine Einträge',

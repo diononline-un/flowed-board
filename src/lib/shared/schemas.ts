@@ -279,3 +279,38 @@ export const postitCleanupSchema = z.strictObject({
 	action: z.enum(['today', 'plusWeek', 'done', 'delete'])
 });
 export type PostitCleanupInput = z.infer<typeof postitCleanupSchema>;
+
+// --- M3: Quick Capture (SPEC 9) ---------------------------------------------
+
+// CaptureItem (SPEC 9.1): the shape the LLM returns and the client edits in
+// the preview. suggestedGoalTitle is free text, never a foreign key.
+export const suggestedHabitSchema = z.strictObject({
+	title: z.string().trim().min(1).max(80),
+	cadence: z.enum(['week', 'month']),
+	targetCount: z.number().int().min(1).max(10000)
+});
+export type SuggestedHabit = z.infer<typeof suggestedHabitSchema>;
+
+export const captureItemSchema = z.strictObject({
+	title: z.string().trim().min(1).max(140),
+	date: ymdField.nullable(),
+	time: timeField.nullable(),
+	suggestedGoalTitle: z.string().trim().min(1).max(140).nullable(),
+	suggestedHabit: suggestedHabitSchema.nullable()
+});
+export type CaptureItem = z.infer<typeof captureItemSchema>;
+
+export const captureParseSchema = z.strictObject({
+	text: z.string().trim().min(1).max(2000)
+});
+export type CaptureParseInput = z.infer<typeof captureParseSchema>;
+
+export const captureCommitSchema = z.strictObject({
+	items: z.array(captureItemSchema).min(1).max(10)
+});
+export type CaptureCommitInput = z.infer<typeof captureCommitSchema>;
+
+export const captureUndoSchema = z.strictObject({
+	batchId: z.string().min(1).max(64)
+});
+export type CaptureUndoInput = z.infer<typeof captureUndoSchema>;

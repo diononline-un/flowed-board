@@ -19,3 +19,14 @@ export function listByGoal(userId: string, goalId: string): HabitRow[] {
 		)
 		.all(userId, goalId) as HabitRow[];
 }
+
+// Exact title match, case-insensitive (capture commit, SPEC 7): assigns a
+// suggested habit only when an active one with that title already exists.
+export function findByTitle(userId: string, title: string): HabitRow | null {
+	const row = getDb()
+		.prepare(
+			'SELECT * FROM habits WHERE user_id = ? AND deleted_at IS NULL AND archived_at IS NULL AND lower(title) = lower(?) ORDER BY position LIMIT 1'
+		)
+		.get(userId, title) as HabitRow | undefined;
+	return row ?? null;
+}

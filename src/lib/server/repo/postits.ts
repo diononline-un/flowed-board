@@ -251,6 +251,23 @@ export function restorePostit(userId: string, id: string, today: string): Public
 	return toPublicPostit(updated);
 }
 
+// Capture undo (SPEC 7, AC3): soft-deletes exactly the still-live post-its of
+// one batch, nothing else. Goes through softDeletePostit so the SPEC-5.3
+// habit-log side effect stays consistent.
+export function softDeleteBatch(userId: string, batchId: string, today: string): PublicPostit[] {
+	const rows = getDb()
+		.prepare(
+			'SELECT id FROM postits WHERE user_id = ? AND batch_id = ? AND deleted_at IS NULL ORDER BY position'
+		)
+		.all(userId, batchId) as { id: string }[];
+	const deleted: PublicPostit[] = [];
+	for (const row of rows) {
+		const postit = softDeletePostit(userId, row.id, today);
+		if (postit) deleted.push(postit);
+	}
+	return deleted;
+}
+
 // Batch position update for drag-and-drop (SPEC 7). Ids of other users are
 // silently skipped; returns the affected, updated post-its.
 export function reorderPostits(

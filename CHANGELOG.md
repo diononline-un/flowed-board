@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-21 — M3: Quick Capture (LLM-Parsing, Vorschau, Commit, Undo, Fallback, Consent)
+
+- Server: `llm.ts` (OpenAI-kompatibel per fetch, 8-s-Timeout, JSON-Modus per `LLM_JSON_MODE`, fester System-Prompt SPEC 9.2, zod-Parse) und `capture.ts` (Rate-Limit → Consent-Gate → Tageslimit via `ai_usage` → LLM → Fallback 9.4, kein DB-Write in parse); `repo/aiUsage.ts` neu, `findByTitle` für goals/habits, `softDeleteBatch` für postits.
+- API: `POST /api/capture/{parse,commit,undo}` — parse liefert `{items, fallback}` ohne DB-Write, 429 `ai_limit_reached` über Tageslimit; commit matcht Ziel/Habit nur per exaktem Titel (kein Auto-Anlegen); undo soft-deletet exakt den Batch.
+- UI: FAB zentral in der mobilen Tabbar, Cmd/Ctrl+K, Sidebar-Eingabe (Desktop), `CaptureSheet` mit Consent-Screen (9.5, Provider-Name aus Env), editierbarer Vorschau (`CapturePreviewRow`), Undo-Toast 8 s; Settings-Toggle „KI-Erkennung".
+- Hartes Verbot 9.5 testabgesichert: statischer Scan (kein journal-Bezug in llm.ts/capture.ts, llm.ts ohne Repo-Importe, einziger Importer ist capture.ts); Consent-Gate ohne LLM-Call/Zähler getestet.
+- 116 Tests grün (14 neu: Fallback-Pfade, Tageslimit, Consent, Prompt-Inhalte, Commit/Undo, 9.5-Scan); check/test/build grün; Flows live gegen `node build` gecurlt (Consent, Fallback, 429 beider Limits, Commit-Matching, Undo, 422/401/403).
+
 ## 2026-09-21 — M2: Board (Post-its, Ziele, Key Results, DnD, Undo)
 
 - Shared-Logik: `horizon.ts` (effectiveHorizon exakt SPEC 5.2) und `progress.ts` (KR-/Ziel-Fortschritt SPEC 5.4) mit Grenzwert-Tests (14/15/90/91 Tage, target==start, leere KR-Liste).

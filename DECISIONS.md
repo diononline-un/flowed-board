@@ -21,3 +21,8 @@ One line per deviation from a SPEC-SOLL or conservative gap-fill (SPEC 0.1/0.2).
 - 2026-09-21 — New rows get `position = max(position)+1` per scope (goals/post-its per user, key results per goal); drag reorders rewrite lane-local positions 1..n (SPEC defines REAL positions but no allocation rule).
 - 2026-09-21 — Key-result delete undo re-creates an equal key result (new id, same values/position) because SPEC 7 defines no key-result restore endpoint (P5 undo kept without inventing API surface).
 - 2026-09-21 — Goal detail page lives at `/plans/goals/[id]` (M2 brief allowed the choice).
+- 2026-09-21 — Capture consent gate runs *before* the daily-counter consumption (SPEC 9.1 lists the limit check first): users without consent never burn quota for calls that cannot happen; observable behavior is otherwise identical.
+- 2026-09-21 — `POST /api/capture/parse` returns an additive `fallback: boolean` next to `items` (SPEC 9.1 names only `{items}`); the client needs the flag to show the SPEC-9.4 fallback hint.
+- 2026-09-21 — Capture commit never auto-creates goals/habits from suggestions (M3 brief), although the SPEC-7 table says "Post-its/Ziele"; only exact-title matching against existing own rows.
+- 2026-09-21 — Past dates in LLM answers are clamped to today (mechanism for SPEC 9.1 "nie in der Vergangenheit", which names none).
+- 2026-09-21 — The capture input relies on the Sheet focus trap focusing the first input instead of the `autofocus` attribute (SPEC 8.1 wording kept functionally, a11y-linter-clean).

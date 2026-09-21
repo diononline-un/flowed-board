@@ -57,6 +57,45 @@
 		}
 	}
 
+	// AI section (SPEC 9.5): the consent toggle stays changeable here at any
+	// time. Turning it off means every capture text is stored unchanged.
+	let aiEnabled = $state(data.user.prefs.aiEnabled);
+	let aiBusy = $state(false);
+	let aiSaved = $state(false);
+	let aiError = $state('');
+
+	async function saveAi() {
+		aiBusy = true;
+		aiSaved = false;
+		aiError = '';
+		try {
+			const response = await fetch('/api/account', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					prefs: {
+						aiEnabled,
+						// First enable without a capture consent counts as consent
+						// here (explicit user decision in settings).
+						...(aiEnabled && !data.user.prefs.aiConsentAt
+							? { aiConsentAt: new Date().toISOString() }
+							: {})
+					}
+				})
+			});
+			if (response.ok) {
+				aiSaved = true;
+				await invalidateAll();
+				return;
+			}
+			aiError = copy.errors.generic;
+		} catch {
+			aiError = copy.errors.generic;
+		} finally {
+			aiBusy = false;
+		}
+	}
+
 	// Password change (ConfirmDialog, P5 exception).
 	let showPasswordDialog = $state(false);
 	let passwordCurrent = $state('');
@@ -319,6 +358,34 @@
 				</button>
 			</div>
 		</form>
+	</section>
+
+	<section
+		class="rounded-card border border-paper-dark bg-paper p-6 shadow-postit"
+		aria-labelledby="ai-heading"
+	>
+		<h2 id="ai-heading" class="text-xl font-bold text-ink">
+			{copy.capture.settingsTitle}
+		</h2>
+		<p class="mt-1 max-w-xl text-sm text-ink-soft">{copy.capture.settingsHint}</p>
+		<label class="mt-4 flex items-center gap-2 text-sm font-semibold text-ink">
+			<input
+				type="checkbox"
+				class="h-4 w-4 accent-ink"
+				bind:checked={aiEnabled}
+				onchange={saveAi}
+				disabled={aiBusy}
+			/>
+			{copy.capture.settingsToggle}
+		</label>
+		{#if aiSaved}
+			<p class="mt-2 text-sm font-semibold text-ink" role="status">
+				{copy.capture.settingsSaved}
+			</p>
+		{/if}
+		{#if aiError}
+			<p class="mt-2 text-sm font-semibold text-ink" role="alert">{aiError}</p>
+		{/if}
 	</section>
 
 	<section

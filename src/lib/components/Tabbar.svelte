@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { CalendarDays, NotebookPen, Settings, StickyNote } from 'lucide-svelte';
+	import { CalendarDays, NotebookPen, Plus, Settings, StickyNote } from 'lucide-svelte';
+	import { openCapture } from '$lib/state/capture.svelte.js';
 	import { copy } from '$lib/shared/copy.js';
 
-	// Mobile navigation (SPEC 10.3): bottom tab bar below 768px.
+	// Mobile navigation (SPEC 10.3): bottom tab bar below 768px with the
+	// central Quick-Capture FAB (SPEC 8.1).
 	const items = [
 		{ href: '/plans', label: copy.nav.plans, icon: StickyNote },
 		{ href: '/calendar', label: copy.nav.calendar, icon: CalendarDays },
@@ -17,7 +19,19 @@
 	aria-label="Hauptnavigation"
 >
 	<div class="mx-auto flex max-w-[1100px] items-stretch justify-between px-2 pb-[env(safe-area-inset-bottom)]">
-		{#each items as item (item.href)}
+		{#each items as item, index (item.href)}
+			{#if index === 2}
+				<div class="flex flex-1 items-start justify-center">
+					<button
+						type="button"
+						aria-label={copy.capture.fabLabel}
+						class="-mt-4 flex h-12 w-12 items-center justify-center rounded-full bg-butter text-ink shadow-postit transition-transform duration-fast hover:scale-[1.05]"
+						onclick={() => openCapture()}
+					>
+						<Plus size={24} strokeWidth={2} aria-hidden="true" />
+					</button>
+				</div>
+			{/if}
 			{@const active = page.url.pathname.startsWith(item.href)}
 			<a
 				href={item.href}

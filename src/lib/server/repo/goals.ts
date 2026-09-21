@@ -97,6 +97,17 @@ export function getGoal(userId: string, id: string): GoalRow | null {
 	return row ?? null;
 }
 
+// Exact title match, case-insensitive (capture commit, SPEC 7): assigns a
+// suggested goal only when the user already owns one with that title.
+export function findByTitle(userId: string, title: string): GoalRow | null {
+	const row = getDb()
+		.prepare(
+			'SELECT * FROM goals WHERE user_id = ? AND deleted_at IS NULL AND lower(title) = lower(?) ORDER BY position LIMIT 1'
+		)
+		.get(userId, title) as GoalRow | undefined;
+	return row ?? null;
+}
+
 export function updateGoal(
 	userId: string,
 	id: string,

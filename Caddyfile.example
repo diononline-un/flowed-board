@@ -1,0 +1,6 @@
+# Minimal reverse proxy with automatic TLS (SPEC 13.3).
+# Copy to Caddyfile, set your domain, point DNS at the VPS, reload Caddy.
+flowboard.example.com {
+	reverse_proxy app:3000
+	encode zstd gzip
+}

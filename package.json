@@ -1,0 +1,44 @@
+{
+  "name": "flowboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "start": "node build",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "test": "vitest run",
+    "icons": "node scripts/icons.mjs",
+    "backup": "node scripts/backup.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "prebuild": "node scripts/icons.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/caveat": "5.3.0",
+    "@fontsource-variable/nunito": "5.3.0",
+    "@scure/bip39": "2.4.0",
+    "better-sqlite3": "13.0.3",
+    "lucide-svelte": "1.0.1",
+    "svelte-dnd-action": "0.9.79",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-node": "5.5.7",
+    "@sveltejs/kit": "2.70.3",
+    "@sveltejs/vite-plugin-svelte": "7.3.0",
+    "@tailwindcss/vite": "4.3.3",
+    "@types/better-sqlite3": "9.6.0",
+    "@types/node": "26.6.2",
+    "sharp": "0.35.4",
+    "svelte": "5.57.1",
+    "svelte-check": "4.7.6",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3",
+    "vite": "8.3.0",
+    "vitest": "5.0.1"
+  }
+}

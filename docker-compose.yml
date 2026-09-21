@@ -1,0 +1,20 @@
+services:
+  app:
+    build: .
+    env_file: .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - flowboard-data:/data
+    restart: unless-stopped
+
+  # Optional module A (Discord bot, SPEC 14.1). Uncomment only after bot/ exists.
+  # bot:
+  #   build: ./bot
+  #   env_file: .env
+  #   depends_on:
+  #     - app
+  #   restart: unless-stopped
+
+volumes:
+  flowboard-data:

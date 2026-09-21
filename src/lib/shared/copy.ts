@@ -12,7 +12,120 @@ export const copy = {
 	plans: {
 		title: 'Pläne',
 		emptyTitle: 'Noch keine Post-its',
-		emptyHint: 'Sobald du etwas planst, landet es hier auf deinem Board.'
+		emptyHint: 'Sobald du etwas planst, landet es hier auf deinem Board.',
+		lanes: {
+			short: 'Kurzfristig',
+			mid: 'Mittelfristig',
+			long: 'Langfristig'
+		},
+		laneEmpty: 'Hier ist gerade nichts.',
+		allGoals: 'Alle Ziele',
+		newGoal: 'Neues Ziel',
+		newPostit: 'Neues Post-it',
+		goalProgress: (percent: number) => `${percent} % geschafft`,
+		overdueChip: 'verschoben?',
+		doneSection: (count: number) => `Erledigt (${count})`,
+		showDone: 'Erledigte anzeigen',
+		hideDone: 'Erledigte ausblenden',
+		cleanupButton: (count: number) => `Aufräumen (${count})`,
+		cleanupTitle: 'Überfällige Post-its aufräumen',
+		cleanupHint:
+			'Diese Post-its liegen in der Vergangenheit. Wähle aus, was damit passieren soll.',
+		cleanupSelectAll: 'Alle auswählen',
+		cleanupApply: 'Anwenden',
+		cleanupEmpty: 'Nichts Überfälliges — dein Board ist aufgeräumt.',
+		cleanupActions: {
+			today: 'Auf heute',
+			plusWeek: 'Um 1 Woche verschieben',
+			done: 'Erledigt',
+			delete: 'Löschen'
+		},
+		actions: {
+			markDone: 'Erledigt markieren',
+			reopen: 'Wieder öffnen',
+			edit: 'Bearbeiten',
+			changeDate: 'Datum ändern',
+			assignGoal: 'Ziel zuordnen',
+			moveTo: 'Verschieben nach',
+			delete: 'Löschen',
+			openMenu: 'Aktionen'
+		},
+		form: {
+			title: 'Titel',
+			titlePlaceholder: 'Was steht an?',
+			goalTitlePlaceholder: 'Worum geht es?',
+			note: 'Notiz',
+			notePlaceholder: 'Optionaler Kontext …',
+			date: 'Datum',
+			time: 'Uhrzeit',
+			duration: 'Dauer in Minuten',
+			goal: 'Ziel',
+			noGoal: 'Kein Ziel',
+			color: 'Farbe',
+			colorGoal: 'Ziel-Farbe',
+			targetDate: 'Zieldatum (optional)',
+			emoji: 'Emoji (optional)',
+			save: 'Speichern',
+			create: 'Anlegen',
+			cancel: 'Abbrechen'
+		},
+		colors: {
+			butter: 'Butter',
+			mint: 'Minze',
+			sky: 'Himmel',
+			blush: 'Blush',
+			sand: 'Sand',
+			sage: 'Salbei',
+			lilac: 'Flieder'
+		},
+		toast: {
+			done: 'Post-it erledigt',
+			deleted: 'Post-it gelöscht',
+			restored: 'Wiederhergestellt',
+			goalDeleted: 'Ziel gelöscht',
+			goalDone: 'Ziel erreicht — stark!',
+			krDeleted: 'Key Result gelöscht',
+			cleanedUp: (count: number) => `${count} Post-its aufgeräumt`,
+			undo: 'Rückgängig',
+			error: 'Das hat nicht geklappt — versuch es nochmal.'
+		},
+		goal: {
+			back: 'Zurück zum Board',
+			open: 'Ziel öffnen',
+			progressTitle: 'Fortschritt',
+			keyResults: 'Key Results',
+			addKeyResult: 'Key Result hinzufügen',
+			kindNumber: 'Zahl',
+			kindCheck: 'Häkchen',
+			startValue: 'Start',
+			targetValue: 'Zielwert',
+			currentValue: 'Aktuell',
+			unit: 'Einheit (optional)',
+			noKeyResults: 'Noch keine Key Results — optional, aber hilfreich.',
+			linkedPostits: 'Verknüpfte Post-its',
+			noLinkedPostits: 'Noch keine Post-its mit diesem Ziel verknüpft.',
+			linkedHabits: 'Verknüpfte Habits',
+			noSteps: 'Noch keine Schritte — verknüpfe Post-its oder lege Key Results an.',
+			achievedTitle: 'Alles geschafft!',
+			achievedQuestion: 'Als erreicht markieren?',
+			achievedAction: 'Ziel erreicht',
+			achievedLater: 'Noch nicht',
+			status: 'Status',
+			statuses: {
+				active: 'Aktiv',
+				done: 'Erreicht',
+				archived: 'Archiviert'
+			},
+			editGoal: 'Ziel bearbeiten',
+			deleteGoal: 'Ziel löschen',
+			deleteKeyResult: 'Key Result löschen',
+			notFound: 'Dieses Ziel gibt es nicht (mehr).'
+		},
+		errors: {
+			dateInvalid: 'Bitte ein gültiges Datum wählen.',
+			timeInvalid: 'Bitte eine gültige Uhrzeit (HH:MM) eingeben.',
+			foreignRef: 'Dieses Ziel oder dieser Habit gehört nicht zu deinem Konto.'
+		}
 	},
 	calendar: {
 		title: 'Kalender',
@@ -147,6 +260,9 @@ export const copy = {
 		impressumTitle: 'Impressum',
 		datenschutzTitle: 'Datenschutz',
 		placeholderBadge: 'Muster'
+	},
+	toast: {
+		close: 'Schließen'
 	},
 	errors: {
 		invalidBody: 'Ungültige Anfrage.',

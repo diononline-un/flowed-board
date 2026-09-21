@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { copy } from './copy.js';
-import { isValidTimeZone } from './date.js';
+import { isValidTimeZone, isValidYmd } from './date.js';
 
 // Input validation for every API endpoint (SPEC 6.1, 6.5, 4.4). All schemas
 // are strict: unknown keys are rejected (constraints 7). Pure module, safe
@@ -160,3 +160,122 @@ export const accountDeleteSchema = z.strictObject({
 	username: z.string().min(1),
 	password: z.string().min(1)
 });
+
+// --- M2: goals, key results, post-its (SPEC 7) -----------------------------
+
+const ymdField = z
+	.string()
+	.refine(isValidYmd, { message: copy.plans.errors.dateInvalid });
+
+const timeField = z
+	.string()
+	.regex(/^([01]\d|2[0-3]):[0-5]\d$/, copy.plans.errors.timeInvalid);
+
+const colorField = z.enum(['butter', 'mint', 'sky', 'blush', 'sand', 'sage', 'lilac']);
+
+const horizonField = z.enum(['short', 'mid', 'long']);
+
+const titleField = z.string().trim().min(1).max(140);
+
+export const goalCreateSchema = z.strictObject({
+	title: titleField,
+	note: z.string().max(2000).nullable().optional(),
+	emoji: z.string().max(8).nullable().optional(),
+	color: colorField.optional(),
+	targetDate: ymdField.nullable().optional(),
+	horizonOverride: horizonField.nullable().optional()
+});
+export type GoalCreateInput = z.infer<typeof goalCreateSchema>;
+
+export const goalPatchSchema = z.strictObject({
+	title: titleField.optional(),
+	note: z.string().max(2000).nullable().optional(),
+	emoji: z.string().max(8).nullable().optional(),
+	color: colorField.optional(),
+	targetDate: ymdField.nullable().optional(),
+	horizonOverride: horizonField.nullable().optional(),
+	status: z.enum(['active', 'done', 'archived']).optional(),
+	position: z.number().finite().optional()
+});
+export type GoalPatchInput = z.infer<typeof goalPatchSchema>;
+
+export const keyResultCreateSchema = z.strictObject({
+	title: titleField,
+	kind: z.enum(['number', 'check']).default('number'),
+	startValue: z.number().finite().optional(),
+	targetValue: z.number().finite().optional(),
+	currentValue: z.number().finite().optional(),
+	unit: z.string().max(20).nullable().optional(),
+	position: z.number().finite().optional()
+});
+export type KeyResultCreateInput = z.infer<typeof keyResultCreateSchema>;
+
+export const keyResultPatchSchema = z.strictObject({
+	title: titleField.optional(),
+	kind: z.enum(['number', 'check']).optional(),
+	startValue: z.number().finite().optional(),
+	targetValue: z.number().finite().optional(),
+	currentValue: z.number().finite().optional(),
+	unit: z.string().max(20).nullable().optional(),
+	position: z.number().finite().optional()
+});
+export type KeyResultPatchInput = z.infer<typeof keyResultPatchSchema>;
+
+export const postitCreateSchema = z.strictObject({
+	title: titleField,
+	note: z.string().max(2000).nullable().optional(),
+	color: colorField.nullable().optional(),
+	date: ymdField.nullable().optional(),
+	time: timeField.nullable().optional(),
+	durationMin: z.number().int().min(1).max(1440).nullable().optional(),
+	goalId: z.string().min(1).nullable().optional(),
+	habitId: z.string().min(1).nullable().optional(),
+	horizonOverride: horizonField.nullable().optional(),
+	position: z.number().finite().optional()
+});
+export type PostitCreateInput = z.infer<typeof postitCreateSchema>;
+
+export const postitPatchSchema = z.strictObject({
+	title: titleField.optional(),
+	note: z.string().max(2000).nullable().optional(),
+	color: colorField.nullable().optional(),
+	date: ymdField.nullable().optional(),
+	time: timeField.nullable().optional(),
+	durationMin: z.number().int().min(1).max(1440).nullable().optional(),
+	goalId: z.string().min(1).nullable().optional(),
+	habitId: z.string().min(1).nullable().optional(),
+	horizonOverride: horizonField.nullable().optional(),
+	position: z.number().finite().optional(),
+	// true sets done_at, false reopens (clears done_at) — SPEC 7.
+	done: z.boolean().optional()
+});
+export type PostitPatchInput = z.infer<typeof postitPatchSchema>;
+
+export const postitsQuerySchema = z.strictObject({
+	from: ymdField.optional(),
+	to: ymdField.optional(),
+	horizon: horizonField.optional(),
+	goalId: z.string().min(1).optional()
+});
+export type PostitsQueryInput = z.infer<typeof postitsQuerySchema>;
+
+export const postitReorderSchema = z.strictObject({
+	postits: z
+		.array(
+			z.strictObject({
+				id: z.string().min(1),
+				position: z.number().finite()
+			})
+		)
+		.min(1)
+		.max(500)
+});
+export type PostitReorderInput = z.infer<typeof postitReorderSchema>;
+
+// Cleanup payload (form chosen here, noted in DECISIONS.md): ids plus one of
+// four actions — reschedule to today, push one week, mark done, soft-delete.
+export const postitCleanupSchema = z.strictObject({
+	ids: z.array(z.string().min(1)).min(1).max(500),
+	action: z.enum(['today', 'plusWeek', 'done', 'delete'])
+});
+export type PostitCleanupInput = z.infer<typeof postitCleanupSchema>;

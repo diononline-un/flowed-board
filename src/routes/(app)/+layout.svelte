@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import Tabbar from '$lib/components/Tabbar.svelte';
+	import ToastHost from '$lib/components/ToastHost.svelte';
 	import { formatDe } from '$lib/shared/date.js';
 	import type { LayoutData } from './$types';
 
@@ -20,3 +21,4 @@
 	</main>
 </div>
 <Tabbar />
+<ToastHost />

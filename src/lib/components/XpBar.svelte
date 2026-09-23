@@ -2,8 +2,10 @@
 	import { copy } from '$lib/shared/copy.js';
 	import { xpProgress } from '$lib/shared/xp.js';
 
-	// XP bar with level name and the XP left in the current band (SPEC 5.6,
-	// 10.4). The parent only renders it when `prefs.gamification` is on.
+	// XP bar with level name and the XP left in the current level (SPEC 5.6,
+	// 10.4). The bar spans the width of the current level (`bandWidth`), not the
+	// cumulative threshold, so it really reaches 100 % at the level end. The
+	// parent only renders it when `prefs.gamification` is on.
 	let { total, compact = false }: { total: number; compact?: boolean } = $props();
 
 	const progress = $derived(xpProgress(total));
@@ -18,7 +20,7 @@
 		class="h-2 w-full overflow-hidden rounded-pill bg-paper-dark"
 		role="progressbar"
 		aria-valuemin="0"
-		aria-valuemax={progress.bandSize}
+		aria-valuemax={progress.bandWidth}
 		aria-valuenow={progress.intoLevel}
 		aria-label={copy.gamification.title}
 	>

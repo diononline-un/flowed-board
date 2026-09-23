@@ -89,35 +89,44 @@ export function levelName(level: number): string {
 	return LEVEL_NAMES[Math.min(index, LEVEL_NAMES.length - 1)]!;
 }
 
-// XP at which a level begins. The band of level n is 30 * n² wide and the
-// switch happens at exactly that width, so the thresholds are the squares
-// themselves: level 1 at 0, level 2 at 30, level 3 at 120, level 4 at 270,
-// level 5 at 480 … — the same points `levelFor` switches at.
+// Start of a level: the level threshold B(L) = 30 * (L-1)². Level 1 begins at
+// 0, level 2 at 30, level 3 at 120, level 4 at 270, level 5 at 480 — the very
+// points `levelFor` switches at (`xp < 30*L²` stays in level L+1).
 export function xpAtLevel(level: number): number {
 	const completed = Math.max(0, Math.floor(level) - 1);
 	return XP_PER_LEVEL_FACTOR * completed * completed;
 }
 
-// XP still missing in the current band ("XP bis nächstes Level: 30 * level²",
-// SPEC 5.6). Clamped at 0 so a value above the band end can never report a
-// negative remainder.
+// Width of a level: B(level+1) - B(level) = 30 * (2*level - 1). Level 1 is 30
+// wide, level 2 is 90, level 3 is 150, level 4 is 210 … Note that this is *not*
+// the threshold 30 * level² from SPEC 5.6: that number is the cumulative point
+// where the level ends (`xpAtLevel(level + 1)`), while the level itself is
+// only bandWidth wide.
+export function xpBandWidth(level: number): number {
+	const safe = Math.max(1, Math.floor(level));
+	return xpAtLevel(safe + 1) - xpAtLevel(safe);
+}
+
+// XP still missing up to the end of the current level, i.e. to the threshold
+// B(level+1). Relative to the current standing ("Noch n XP bis zum nächsten
+// Level"), clamped at 0 so a value past the threshold can never go negative.
 export function xpToNextLevel(total: number): number {
 	const safe = Math.max(0, Math.floor(Number.isFinite(total) ? total : 0));
 	const level = levelFor(safe);
-	const bandSize = XP_PER_LEVEL_FACTOR * level * level;
-	return Math.max(0, bandSize - (safe - xpAtLevel(level)));
+	return Math.max(0, xpAtLevel(level + 1) - safe);
 }
 
 export interface XpProgress {
 	total: number;
 	level: number;
 	name: string;
-	// XP collected inside the current band.
+	// XP collected inside the current level (total - B(level)).
 	intoLevel: number;
-	// Size of the current band (30 * level²).
-	bandSize: number;
+	// Width of the current level: B(level+1) - B(level) = 30 * (2*level - 1).
+	bandWidth: number;
+	// XP missing to the end of the current level (B(level+1) - total).
 	toNextLevel: number;
-	// Band completion 0…1, for the progress bar.
+	// Level completion 0…1, for the progress bar: intoLevel / bandWidth.
 	ratio: number;
 }
 
@@ -126,16 +135,16 @@ export function xpProgress(total: number): XpProgress {
 	const safe = Math.max(0, Math.floor(Number.isFinite(total) ? total : 0));
 	const level = levelFor(safe);
 	const bandStart = xpAtLevel(level);
-	const bandSize = XP_PER_LEVEL_FACTOR * level * level;
+	const bandWidth = xpBandWidth(level);
 	const intoLevel = safe - bandStart;
 	return {
 		total: safe,
 		level,
 		name: levelName(level),
 		intoLevel,
-		bandSize,
-		toNextLevel: Math.max(0, bandSize - intoLevel),
-		ratio: bandSize > 0 ? Math.min(1, intoLevel / bandSize) : 0
+		bandWidth,
+		toNextLevel: Math.max(0, bandWidth - intoLevel),
+		ratio: bandWidth > 0 ? Math.min(1, intoLevel / bandWidth) : 0
 	};
 }
 

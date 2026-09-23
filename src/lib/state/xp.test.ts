@@ -42,10 +42,18 @@ describe('xp store (SPEC 5.6, P7)', () => {
 		resetXpForTests(480, true);
 		expect(xpStore.progress.level).toBe(5);
 		expect(xpStore.progress.name).toBe('Latte');
+		// the bar spans the level width (270 at level 5), not the cumulative
+		// threshold of 30 * 5²
+		expect(xpStore.progress.bandWidth).toBe(270);
+		expect(xpStore.progress.toNextLevel).toBe(270);
 		expect(xpStore.progress.ratio).toBe(0);
 		syncXp(119, true);
 		expect(xpStore.total).toBe(119);
 		expect(xpStore.progress.level).toBe(2);
+		expect(xpStore.progress.bandWidth).toBe(90);
+		expect(xpStore.progress.intoLevel).toBe(89);
+		expect(xpStore.progress.toNextLevel).toBe(1);
+		expect(xpStore.progress.ratio).toBeCloseTo(89 / 90, 10);
 		expect(xpStore.gamification).toBe(true);
 	});
 

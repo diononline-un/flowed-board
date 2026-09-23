@@ -16,7 +16,15 @@ import { withXp } from './http.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { globSync } from 'node:fs';
-import { XP_KINDS, levelFor, levelName, xpAtLevel, xpProgress, xpToNextLevel } from '$lib/shared/xp.js';
+import {
+	XP_KINDS,
+	levelFor,
+	levelName,
+	xpAtLevel,
+	xpBandWidth,
+	xpProgress,
+	xpToNextLevel
+} from '$lib/shared/xp.js';
 import type { UserRow } from '$lib/shared/types.js';
 
 // SPEC 5.6 award rules against :memory: with the real migrations: the points
@@ -244,50 +252,108 @@ describe('level formula (SPEC 5.6)', () => {
 		expect(levelName(42)).toBe('Café-Legende');
 	});
 
-	it('reports the XP up to the next level as 30 * level² minus the band progress', () => {
-		// The band of level n is 30 * n² wide and `levelFor` switches at exactly
-		// that width, so the thresholds are the squares: 0, 30, 120, 270, 480 …
+	it('separates the cumulative level threshold from the level width', () => {
+		// B(L) = 30 * (L-1)^2 is where a level begins and where `levelFor`
+		// switches; the level itself is only B(L+1) - B(L) = 30 * (2L - 1) wide.
+		// SPEC 5.6's "30 * level²" is the cumulative threshold, not the rest.
 		expect(xpAtLevel(1)).toBe(0);
 		expect(xpAtLevel(2)).toBe(30);
 		expect(xpAtLevel(3)).toBe(120);
 		expect(xpAtLevel(4)).toBe(270);
 		expect(xpAtLevel(5)).toBe(480);
 		expect(xpAtLevel(10)).toBe(30 * 81);
-		expect(xpToNextLevel(0)).toBe(30);
-		expect(xpToNextLevel(10)).toBe(20);
-		expect(xpToNextLevel(30)).toBe(120); // level 2, band size 120
-		expect(xpToNextLevel(120)).toBe(270); // level 3, band size 270
-		const progress = xpProgress(45);
-		expect(progress.level).toBe(2);
-		expect(progress.bandSize).toBe(120);
-		expect(progress.intoLevel).toBe(15);
-		expect(progress.toNextLevel).toBe(105);
-		expect(progress.name).toBe('Espresso');
+		expect(xpBandWidth(1)).toBe(30);
+		expect(xpBandWidth(2)).toBe(90);
+		expect(xpBandWidth(3)).toBe(150);
+		expect(xpBandWidth(4)).toBe(210);
+		expect(xpBandWidth(5)).toBe(270);
+		// the widths really add up to the thresholds
+		expect(xpBandWidth(1) + xpBandWidth(2) + xpBandWidth(3)).toBe(xpAtLevel(4));
+		expect(xpBandWidth(1) + xpBandWidth(2)).toBe(xpAtLevel(3));
 	});
 
-	it('keeps the progress values consistent at every band boundary', () => {
-		// Regression: `xpAtLevel` used to sum the bands (0, 30, 150, 480 …) while
-		// `levelFor` switched at 30 * (level-1)², which produced a negative
-		// `intoLevel`, a negative bar width and a wrong `toNextLevel` from
-		// level 3 on.
-		for (const total of [0, 29, 30, 60, 119, 120, 150, 269, 270, 480]) {
-			const progress = xpProgress(total);
-			expect(progress.level, `level at ${total}`).toBe(levelFor(total));
-			expect(progress.toNextLevel, `toNextLevel at ${total}`).toBe(
-				Math.max(0, 30 * progress.level * progress.level - progress.intoLevel)
+	it('matches the expected values at every level boundary', () => {
+		// The table is the contract: level, XP inside the level, level width,
+		// XP up to the next level and the bar ratio.
+		const cases: {
+			total: number;
+			level: number;
+			intoLevel: number;
+			bandWidth: number;
+			toNextLevel: number;
+			ratio: number;
+		}[] = [
+			{ total: 0, level: 1, intoLevel: 0, bandWidth: 30, toNextLevel: 30, ratio: 0 },
+			{ total: 29, level: 1, intoLevel: 29, bandWidth: 30, toNextLevel: 1, ratio: 29 / 30 },
+			{ total: 30, level: 2, intoLevel: 0, bandWidth: 90, toNextLevel: 90, ratio: 0 },
+			{ total: 119, level: 2, intoLevel: 89, bandWidth: 90, toNextLevel: 1, ratio: 89 / 90 },
+			{ total: 120, level: 3, intoLevel: 0, bandWidth: 150, toNextLevel: 150, ratio: 0 },
+			{ total: 269, level: 3, intoLevel: 149, bandWidth: 150, toNextLevel: 1, ratio: 149 / 150 },
+			{ total: 270, level: 4, intoLevel: 0, bandWidth: 210, toNextLevel: 210, ratio: 0 },
+			{ total: 480, level: 5, intoLevel: 0, bandWidth: 270, toNextLevel: 270, ratio: 0 }
+		];
+		for (const expected of cases) {
+			const progress = xpProgress(expected.total);
+			expect(progress.level, `level at ${expected.total}`).toBe(expected.level);
+			expect(progress.intoLevel, `intoLevel at ${expected.total}`).toBe(expected.intoLevel);
+			expect(progress.bandWidth, `bandWidth at ${expected.total}`).toBe(expected.bandWidth);
+			expect(progress.toNextLevel, `toNextLevel at ${expected.total}`).toBe(expected.toNextLevel);
+			expect(progress.ratio, `ratio at ${expected.total}`).toBeCloseTo(expected.ratio, 10);
+			// `xpToNextLevel` answers the same question relative to the total
+			expect(xpToNextLevel(expected.total), `xpToNextLevel at ${expected.total}`).toBe(
+				expected.toNextLevel
 			);
-			expect(progress.intoLevel, `intoLevel at ${total}`).toBeGreaterThanOrEqual(0);
-			expect(progress.intoLevel, `intoLevel at ${total}`).toBeLessThan(progress.bandSize);
-			expect(progress.ratio, `ratio at ${total}`).toBeGreaterThanOrEqual(0);
-			expect(progress.ratio, `ratio at ${total}`).toBeLessThanOrEqual(1);
-			expect(xpToNextLevel(total), `xpToNextLevel at ${total}`).toBe(progress.toNextLevel);
-			// the reported band start is the point the level really begins at
-			expect(xpAtLevel(progress.level), `band start at ${total}`).toBeLessThanOrEqual(total);
-			expect(xpAtLevel(progress.level + 1), `next band start at ${total}`).toBeGreaterThan(total);
+			// B(level) + intoLevel = total, and the width is the difference
+			expect(xpAtLevel(expected.level) + progress.intoLevel).toBe(expected.total);
+			expect(xpAtLevel(expected.level + 1) - xpAtLevel(expected.level)).toBe(expected.bandWidth);
 		}
-		expect(xpProgress(120).intoLevel).toBe(0);
-		expect(xpProgress(120).toNextLevel).toBe(270);
-		expect(xpProgress(480).ratio).toBe(0);
+		// inside a level the ratio stays below 1 and reaches it only at the end
+		expect(xpProgress(45).level).toBe(2);
+		expect(xpProgress(45).intoLevel).toBe(15);
+		expect(xpProgress(45).bandWidth).toBe(90);
+		expect(xpProgress(45).toNextLevel).toBe(75);
+		expect(xpProgress(119).ratio).toBeCloseTo(89 / 90, 10);
+		expect(xpProgress(119).toNextLevel).toBe(1);
+		expect(xpProgress(120).toNextLevel).toBe(150);
+		expect(xpProgress(120).ratio).toBe(0);
+	});
+
+	it('keeps the progress values consistent over a wide range', () => {
+		// Regression guard: `xpAtLevel` used to sum the bands (0, 30, 150, 480 …)
+		// while `levelFor` switched at 30 * (L-1)^2, which produced a negative
+		// `intoLevel` and a negative bar width from level 3 on; mixing the
+		// cumulative threshold into the remainder reported too many missing XP.
+		const totals = [
+			0, 1, 29, 30, 60, 89, 119, 120, 150, 200, 269, 270, 300, 479, 480, 1000, 2430, 3150
+		];
+		for (const total of totals) {
+			const progress = xpProgress(total);
+			const bandStart = xpAtLevel(progress.level);
+			const nextStart = xpAtLevel(progress.level + 1);
+			expect(progress.level, `level at ${total}`).toBe(levelFor(total));
+			expect(bandStart, `band start at ${total}`).toBeLessThanOrEqual(total);
+			expect(nextStart, `next band start at ${total}`).toBeGreaterThan(total);
+			expect(progress.intoLevel, `intoLevel at ${total}`).toBe(total - bandStart);
+			expect(progress.intoLevel, `intoLevel at ${total}`).toBeGreaterThanOrEqual(0);
+			expect(progress.intoLevel, `intoLevel at ${total}`).toBeLessThan(progress.bandWidth);
+			expect(progress.bandWidth, `bandWidth at ${total}`).toBe(nextStart - bandStart);
+			expect(progress.toNextLevel, `toNextLevel at ${total}`).toBe(nextStart - total);
+			expect(progress.toNextLevel, `toNextLevel at ${total}`).toBe(
+				progress.bandWidth - progress.intoLevel
+			);
+			expect(progress.ratio, `ratio at ${total}`).toBeGreaterThanOrEqual(0);
+			expect(progress.ratio, `ratio at ${total}`).toBeLessThan(1);
+			expect(progress.ratio, `ratio at ${total}`).toBeCloseTo(
+				progress.intoLevel / progress.bandWidth,
+				10
+			);
+			expect(xpToNextLevel(total), `xpToNextLevel at ${total}`).toBe(progress.toNextLevel);
+		}
+		// defensively clamped inputs
+		expect(xpToNextLevel(-5)).toBe(30);
+		expect(xpProgress(Number.NaN).level).toBe(1);
+		expect(xpProgress(Number.NaN).toNextLevel).toBe(30);
+		expect(xpProgress(Number.NaN).ratio).toBe(0);
 	});
 
 	it('reports the unchanged level for a badge without XP (gained 0)', () => {

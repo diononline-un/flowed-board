@@ -1,6 +1,15 @@
 # Changelog
 
-## 2026-09-21 — M4: Kalender (Woche/Monat) + Tracker (Habits, Logs, Fortschritt)
+## 2026-09-24 — M5: Journal (Vorlagen, Einträge, In-App-Erinnerung, Verlauf)
+
+- Shared: `journalTemplates.ts` mit der Fälligkeitsregel aus SPEC 5.7 (Vorlage aktiv, Wochentag in `days`, `time <= jetzt < time + 6 h`, kein Eintrag für (Vorlage, Tag, Slot)), den Standardvorlagen aus 8.7 (morning/evening/quick, inkl. Onboarding-Rhythmus für M6), zod-Parsern für die JSON-Spalten (`fields`, `schedule`, `fields_snapshot`, `values_json`) und der Wertevalidierung; `schemas.ts` bekommt `JournalField` als discriminated union mit allen 5.7-Grenzen (faces nur bei 1–5, maxLength ≤ 2000, options 2–8, strict) sowie Zeitplan- und Template-/Entry-Schemas.
+- Repo: `repo/journalTemplates.ts` (anlegen/ändern/auflisten, Deaktivieren = `active=0`, JSON-Spalten beim Lesen mit zod geparst) und `repo/journalEntries.ts` (Eintrag friert `fields_snapshot` und Vorlagenname ein, Slot-Duplikat über den Unique-Index `uq_je_slot`, `NULL`-Slot mehrfach erlaubt, `PATCH` ändert nur Werte); Mandantentrennung je Datei getestet.
+- API: `GET/POST/PATCH /api/journal/templates[/:id]`, `GET/POST /api/journal/entries`, `PATCH /api/journal/entries/:id`, `GET /api/journal/due` (serverseitig in der Nutzer-Zeitzone) — alle zod-strict, fremde IDs 404/422; gleicher Slot zweimal → 409 mit Hinweis, den bestehenden Eintrag zu bearbeiten (AC13), Werte gegen `fields_snapshot` validiert, neuer Helfer `conflict()` in `http.ts`.
+- UI `/journal`: Heute-Karte als proaktive In-App-Erinnerung (große Buttons je fälliger Vorlage), Nachtragen für heute und früher, Eintragsformular mit `JournalFieldInput` (Gesichter/Buttons, Ja/Nein, Chips, Textarea mit Zeichenzähler, Stepper), Verlauf gruppiert nach Datum, Vorlagen-Verwaltung (anlegen/bearbeiten/deaktivieren); alle Schreibpfade optimistisch mit Rollback und Fehlertoast.
+- AC14: Deaktivieren entfernt die Vorlage aus „Heute“, bestehende Einträge bleiben über `fields_snapshot` lesbar und weiterhin editierbar.
+- 205 Tests grün (48 neu: Fälligkeitsgrenzen, Feld-/Wertvalidierung, Repo-CRUD inkl. Slot-Unique und Snapshot, Mandantentrennung, Komponenten-Rendering); `check`/`build` grün; AC13/AC14 zusätzlich live gegen `node build` auf Port 3104 geprüft (Demo-Server 2016 unberührt). Hartes Verbot 9.5 unverändert: kein Journal-Pfad zu `llm.ts`, die M3-Scan-Tests bleiben grün.
+
+## 2026-09-23 — M4: Kalender (Woche/Monat) + Tracker (Habits, Logs, Fortschritt)
 
 - Shared: `habit.ts` mit Fensterberechnung SPEC 5.5 (week/month/range), Zähler, `isLogDateAllowed` (60 Tage/keine Zukunft), „Wochen/Monate geschafft" + „Beste Woche/Bester Monat" ohne Streak (sinkt nie) und den vier `range`-Tempo-Fällen; `calendar.ts` liefert Wochen-/Monatsgitter (week_start-abhängig), Fenster-Shift und Label. Beide mit Unit-Tests (19 + 6 neu).
 - Repo: `repo/habits.ts` vollständig (anlegen/ändern/archivieren/soft-delete/restore, goalId-Verknüpfung, per-User-Position) und `repo/habitLogs.ts` (Tap-Log +1/−1 löscht den jüngsten Tap-Log des Tages, max_per_day, 60-Tage- und range-Fenster-Prüfung, `listForHabit` mit from/to); Post-it-Logs aus M2 bleiben unberührt. Tests inkl. Mandantentrennung und der SPEC-5.3-Nebenwirkung.

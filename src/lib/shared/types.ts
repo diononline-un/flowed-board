@@ -1,4 +1,4 @@
-import type { Prefs } from './schemas.js';
+import type { JournalField, JournalSchedule, JournalValues, Prefs } from './schemas.js';
 import type { HabitCadence } from './habit.js';
 
 // Shared domain types (SPEC 4). Row types mirror the SQLite schema 1:1
@@ -228,4 +228,71 @@ export interface PublicHabitLog {
 	logDate: string;
 	source: 'tap' | 'postit';
 	createdAt: string;
+}
+
+// --- Journal (SPEC 4.2, 5.7) ------------------------------------------------
+// The JSON columns (fields, schedule, fields_snapshot, values_json) are TEXT
+// in SQLite and parsed with zod on read (SPEC 4.1).
+export type { JournalField, JournalSchedule, JournalValues } from './schemas.js';
+
+export interface JournalTemplateRow {
+	id: string;
+	user_id: string;
+	name: string;
+	emoji: string | null;
+	fields: string; // JSON: JournalField[]
+	schedule: string | null; // JSON: JournalSchedule | null
+	active: 0 | 1;
+	seed_key: string | null;
+	position: number;
+	created_at: string;
+	updated_at: string;
+	deleted_at: string | null;
+}
+
+export interface JournalEntryRow {
+	id: string;
+	user_id: string;
+	template_id: string | null;
+	template_name: string;
+	entry_date: string;
+	slot: string | null;
+	fields_snapshot: string; // JSON: JournalField[] as of the entry
+	values_json: string; // JSON: { [fieldId]: string | number | boolean }
+	created_at: string;
+	updated_at: string;
+}
+
+export interface PublicJournalTemplate {
+	id: string;
+	name: string;
+	emoji: string | null;
+	fields: JournalField[];
+	schedule: JournalSchedule | null;
+	active: boolean;
+	seedKey: string | null;
+	position: number;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface PublicJournalEntry {
+	id: string;
+	templateId: string | null;
+	templateName: string;
+	entryDate: string;
+	slot: string | null;
+	// Field definitions at entry time (AC14): entries stay readable after the
+	// template changed or was deactivated.
+	fields: JournalField[];
+	values: JournalValues;
+	createdAt: string;
+	updatedAt: string;
+}
+
+// Identity of an entry for the due check of SPEC 5.7.
+export interface JournalEntryKey {
+	templateId: string | null;
+	entryDate: string;
+	slot: string | null;
 }

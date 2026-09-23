@@ -380,3 +380,179 @@ export const habitLogsQuerySchema = z.strictObject({
 	to: ymdField.optional()
 });
 export type HabitLogsQueryInput = z.infer<typeof habitLogsQuerySchema>;
+
+// --- M5: journal templates and entries (SPEC 5.7, 7, 8.5) -------------------
+
+// Field ids are stable keys of the values object, so they stay URL/attribute
+// safe (DECISIONS.md).
+const journalFieldId = z
+	.string()
+	.trim()
+	.min(1)
+	.max(40)
+	.regex(/^[A-Za-z0-9_-]+$/, copy.journal.errors.fieldIdInvalid);
+
+const journalLabel = z.string().trim().min(1).max(80);
+
+// scale: min is always 1, max is 5, 7 or 10; faces are only meaningful on a
+// 1–5 scale (SPEC 5.7).
+const journalScaleField = z
+	.strictObject({
+		id: journalFieldId,
+		type: z.literal('scale'),
+		label: journalLabel,
+		required: z.boolean().default(false),
+		min: z.literal(1).default(1),
+		max: z.union([z.literal(5), z.literal(7), z.literal(10)]),
+		style: z.enum(['faces', 'numbers']).default('numbers')
+	})
+	.refine((field) => field.style !== 'faces' || field.max === 5, {
+		message: copy.journal.errors.facesRange,
+		path: ['style']
+	});
+
+const journalTextField = z.strictObject({
+	id: journalFieldId,
+	type: z.literal('text'),
+	label: journalLabel,
+	required: z.boolean().default(false),
+	placeholder: z.string().max(80).nullable().optional(),
+	maxLength: z.number().int().min(1).max(2000).default(500)
+});
+
+const journalYesNoField = z.strictObject({
+	id: journalFieldId,
+	type: z.literal('yesno'),
+	label: journalLabel,
+	required: z.boolean().default(false)
+});
+
+const journalChoiceField = z
+	.strictObject({
+		id: journalFieldId,
+		type: z.literal('choice'),
+		label: journalLabel,
+		required: z.boolean().default(false),
+		options: z.array(z.string().trim().min(1).max(40)).min(2).max(8)
+	})
+	.refine((field) => new Set(field.options).size === field.options.length, {
+		message: copy.journal.errors.optionsDuplicate,
+		path: ['options']
+	});
+
+const journalNumberField = z
+	.strictObject({
+		id: journalFieldId,
+		type: z.literal('number'),
+		label: journalLabel,
+		required: z.boolean().default(false),
+		unit: z.string().max(20).nullable().optional(),
+		min: z.number().finite().nullable().optional(),
+		max: z.number().finite().nullable().optional()
+	})
+	.refine(
+		(field) =>
+			field.min === undefined ||
+			field.min === null ||
+			field.max === undefined ||
+			field.max === null ||
+			field.min <= field.max,
+		{ message: copy.journal.errors.boundsInvalid, path: ['max'] }
+	);
+
+export const journalFieldSchema = z.discriminatedUnion('type', [
+	journalScaleField,
+	journalTextField,
+	journalYesNoField,
+	journalChoiceField,
+	journalNumberField
+]);
+export type JournalField = z.infer<typeof journalFieldSchema>;
+
+// A template carries 1–20 fields with unique ids (SPEC 5.7).
+export const journalFieldsSchema = z
+	.array(journalFieldSchema)
+	.min(1)
+	.max(20)
+	.refine((fields) => new Set(fields.map((field) => field.id)).size === fields.length, {
+		message: copy.journal.errors.fieldIdDuplicate
+	});
+
+// schedule: up to four times (HH:MM) on 0–6 weekdays. NULL means "manual
+// only" (SPEC 5.7). Times without a weekday could never become due, so that
+// combination is rejected instead of silently dead (DECISIONS.md).
+export const journalScheduleSchema = z
+	.strictObject({
+		times: z.array(timeField).max(4).default([]),
+		days: z.array(z.number().int().min(0).max(6)).max(7).default([])
+	})
+	.refine((schedule) => new Set(schedule.times).size === schedule.times.length, {
+		message: copy.journal.errors.timesDuplicate,
+		path: ['times']
+	})
+	.refine((schedule) => new Set(schedule.days).size === schedule.days.length, {
+		message: copy.journal.errors.daysDuplicate,
+		path: ['days']
+	})
+	.refine((schedule) => schedule.times.length === 0 || schedule.days.length > 0, {
+		message: copy.journal.errors.timesNeedDays,
+		path: ['days']
+	});
+export type JournalSchedule = z.infer<typeof journalScheduleSchema>;
+
+// Field values (SPEC 4.2 values_json): string | number | boolean per field id.
+export const journalValuesSchema = z
+	.record(
+		z.string().min(1).max(40),
+		z.union([z.string().max(2000), z.number().finite(), z.boolean()])
+	)
+	.refine((values) => Object.keys(values).length <= 40, {
+		message: copy.journal.errors.tooManyValues
+	});
+export type JournalValues = z.infer<typeof journalValuesSchema>;
+
+export const journalTemplateCreateSchema = z.strictObject({
+	name: z.string().trim().min(1).max(40),
+	emoji: z.string().max(8).nullable().optional(),
+	fields: journalFieldsSchema,
+	schedule: journalScheduleSchema.nullable().optional()
+});
+export type JournalTemplateCreateInput = z.infer<typeof journalTemplateCreateSchema>;
+
+export const journalTemplatePatchSchema = z.strictObject({
+	name: z.string().trim().min(1).max(40).optional(),
+	emoji: z.string().max(8).nullable().optional(),
+	fields: journalFieldsSchema.optional(),
+	schedule: journalScheduleSchema.nullable().optional(),
+	// false deactivates the template; its entries stay readable (AC14).
+	active: z.boolean().optional()
+});
+export type JournalTemplatePatchInput = z.infer<typeof journalTemplatePatchSchema>;
+
+export const journalTemplatesQuerySchema = z.strictObject({
+	// '1' also returns deactivated templates (the management list, AC14).
+	includeInactive: z.enum(['0', '1']).optional()
+});
+export type JournalTemplatesQueryInput = z.infer<typeof journalTemplatesQuerySchema>;
+
+export const journalEntryCreateSchema = z.strictObject({
+	templateId: z.string().min(1),
+	entryDate: ymdField,
+	// 'HH:MM' of the schedule slot, or null for a manual entry (SPEC 4.2).
+	slot: timeField.nullable().optional(),
+	values: journalValuesSchema
+});
+export type JournalEntryCreateInput = z.infer<typeof journalEntryCreateSchema>;
+
+// Only the values are editable; date and slot belong to the slot identity
+// (SPEC 7, AC13).
+export const journalEntryPatchSchema = z.strictObject({
+	values: journalValuesSchema
+});
+export type JournalEntryPatchInput = z.infer<typeof journalEntryPatchSchema>;
+
+export const journalEntriesQuerySchema = z.strictObject({
+	from: ymdField.optional(),
+	to: ymdField.optional()
+});
+export type JournalEntriesQueryInput = z.infer<typeof journalEntriesQuerySchema>;

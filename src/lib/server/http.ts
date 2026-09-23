@@ -30,6 +30,12 @@ export function notFound(message: string = copy.errors.notFound): Response {
 	return json({ error: message }, { status: 404 });
 }
 
+// 409 for a state conflict the client resolves by editing what exists
+// (AC13: the same journal slot twice).
+export function conflict(message: string): Response {
+	return json({ error: message }, { status: 409 });
+}
+
 // 429 always carries Retry-After (SPEC 6.5).
 export function rateLimited(retryAfterSec: number): Response {
 	return json(

@@ -266,7 +266,148 @@ export const copy = {
 	journal: {
 		title: 'Journal',
 		emptyTitle: 'Noch keine Einträge',
-		emptyHint: 'Dein erster Journal-Eintrag wartet schon auf dich.'
+		emptyHint: 'Dein erster Journal-Eintrag wartet schon auf dich.',
+		// SPEC 8.5: the in-app reminder is the "Heute" card with one large
+		// friendly button per due template.
+		todayTitle: 'Heute',
+		todayEmpty: 'Gerade ist nichts fällig — schreib, wenn dir danach ist.',
+		dueLabel: 'Wartet auf dich',
+		fillNow: 'Ausfüllen',
+		backfill: 'Nachtragen',
+		backfillTitle: 'Eintrag nachtragen',
+		backfillHint: 'Wähle eine Vorlage und den Tag, für den du schreiben willst.',
+		historyTitle: 'Verlauf',
+		historyLimited: (days: number) => `Verlauf der letzten ${days} Tage.`,
+		openEntry: 'Eintrag öffnen',
+		entryNewTitle: 'Neuer Eintrag',
+		entryEditTitle: 'Eintrag bearbeiten',
+		entrySlot: (time: string) => `${time} Uhr`,
+		entryNoSlot: 'Ohne Uhrzeit',
+		// AC14: deactivated templates keep their entries readable.
+		entryInactiveTemplate: 'Vorlage deaktiviert',
+		entrySnapshotHint:
+			'Diese Vorlage wurde später geändert oder deaktiviert — der Eintrag zeigt den Stand von damals.',
+		templatesButton: 'Vorlagen',
+		templatesTitle: 'Vorlagen verwalten',
+		templatesEmpty: 'Noch keine Vorlagen — leg deine erste an.',
+		newTemplate: 'Neue Vorlage',
+		editTemplate: 'Vorlage bearbeiten',
+		templateInactive: 'deaktiviert',
+		deactivate: 'Deaktivieren',
+		activate: 'Aktivieren',
+		deactivateHint:
+			'Deaktivierte Vorlagen erscheinen nicht mehr in „Heute“ — bestehende Einträge bleiben lesbar.',
+		noSchedule: 'Nur manuell',
+		emptyValue: '—',
+		form: {
+			date: 'Datum',
+			slot: 'Uhrzeit',
+			slotNone: 'Ohne Uhrzeit',
+			name: 'Name',
+			namePlaceholder: 'z. B. Abendreflexion',
+			emoji: 'Emoji (optional)',
+			active: 'Aktiv',
+			schedule: 'Zeitplan',
+			scheduleManualHint:
+				'Ohne Zeitplan erscheint die Vorlage nicht in „Heute“ — du kannst sie jederzeit manuell ausfüllen.',
+			scheduleToggle: 'Erinnerung in „Heute“ anzeigen',
+			times: 'Uhrzeiten',
+			addTime: 'Uhrzeit hinzufügen',
+			removeTime: 'Uhrzeit entfernen',
+			days: 'Wochentage',
+			fields: 'Felder',
+			addField: 'Feld hinzufügen',
+			removeField: 'Feld entfernen',
+			fieldType: 'Feldtyp',
+			fieldLabel: 'Beschriftung',
+			fieldLabelPlaceholder: 'z. B. Stimmung',
+			required: 'Pflichtfeld',
+			scaleMax: 'Skala bis',
+			scaleStyle: 'Darstellung',
+			placeholder: 'Platzhalter',
+			maxLength: 'Maximale Zeichen',
+			options: 'Optionen',
+			addOption: 'Option hinzufügen',
+			removeOption: 'Option entfernen',
+			unit: 'Einheit',
+			minValue: 'Minimum',
+			maxValue: 'Maximum',
+			save: 'Speichern',
+			create: 'Anlegen',
+			cancel: 'Abbrechen',
+			requiredMark: 'Pflichtfeld'
+		},
+		types: {
+			scale: 'Skala',
+			text: 'Text',
+			yesno: 'Ja/Nein',
+			choice: 'Auswahl',
+			number: 'Zahl'
+		},
+		scaleStyles: {
+			faces: 'Gesichter',
+			numbers: 'Zahlen'
+		},
+		days: {
+			0: 'So',
+			1: 'Mo',
+			2: 'Di',
+			3: 'Mi',
+			4: 'Do',
+			5: 'Fr',
+			6: 'Sa'
+		},
+		faceLabels: {
+			1: 'sehr schlecht',
+			2: 'eher schlecht',
+			3: 'mittel',
+			4: 'eher gut',
+			5: 'sehr gut'
+		},
+		values: {
+			yes: 'Ja',
+			no: 'Nein',
+			counter: (length: number, max: number) => `${length} / ${max} Zeichen`,
+			decrease: 'Verringern',
+			increase: 'Erhöhen'
+		},
+		toast: {
+			entryCreated: 'Eintrag gespeichert',
+			entrySaved: 'Eintrag gespeichert',
+			templateCreated: 'Vorlage angelegt',
+			templateSaved: 'Vorlage gespeichert',
+			templateDeactivated: 'Vorlage deaktiviert',
+			templateActivated: 'Vorlage aktiviert',
+			error: 'Das hat nicht geklappt — versuch es nochmal.'
+		},
+		errors: {
+			// Schema-level messages (SPEC 5.7 bounds).
+			fieldIdInvalid: 'Feld-Kennung: Buchstaben, Zahlen, _ und - (max. 40 Zeichen).',
+			fieldIdDuplicate: 'Jede Feld-Kennung darf nur einmal vorkommen.',
+			facesRange: 'Gesichter gibt es nur bei einer Skala bis 5.',
+			optionsDuplicate: 'Jede Option darf nur einmal vorkommen.',
+			boundsInvalid: 'Das Maximum muss über dem Minimum liegen.',
+			timesDuplicate: 'Jede Uhrzeit darf nur einmal vorkommen.',
+			daysDuplicate: 'Jeder Wochentag darf nur einmal vorkommen.',
+			timesNeedDays: 'Wähle mindestens einen Wochentag für die Uhrzeiten.',
+			tooManyValues: 'Zu viele Werte im Eintrag.',
+			// Value validation against fields_snapshot.
+			unknownField: 'Dieses Feld gehört nicht zu dieser Vorlage.',
+			required: 'Dieses Feld ist ein Pflichtfeld.',
+			notANumber: 'Bitte eine Zahl eingeben.',
+			outOfScale: 'Dieser Wert liegt außerhalb der Skala.',
+			notBoolean: 'Bitte Ja oder Nein wählen.',
+			notInOptions: 'Bitte eine der Optionen wählen.',
+			textTooLong: 'Der Text ist zu lang.',
+			outOfBounds: 'Dieser Wert liegt außerhalb des erlaubten Bereichs.',
+			invalidValue: 'Dieser Wert passt nicht zum Feldtyp.',
+			// API errors.
+			templateUnknown: 'Diese Vorlage gibt es nicht (mehr).',
+			slotTaken:
+				'Für diese Vorlage gibt es zu dieser Uhrzeit schon einen Eintrag — bearbeite den bestehenden.',
+			futureDate: 'Nachtragen geht nur für heute oder früher.',
+			templateInactive: 'Diese Vorlage ist deaktiviert — aktiviere sie zuerst.'
+		}
 	},
 	settings: {
 		title: 'Settings',

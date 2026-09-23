@@ -2,6 +2,7 @@ import * as aiUsageRepo from './repo/aiUsage.js';
 import * as goalsRepo from './repo/goals.js';
 import * as habitsRepo from './repo/habits.js';
 import * as journalTemplatesRepo from './repo/journalTemplates.js';
+import * as keyResultsRepo from './repo/keyResults.js';
 import * as linkCodesRepo from './repo/linkCodes.js';
 import * as postitsRepo from './repo/postits.js';
 import * as sessionsRepo from './repo/sessions.js';
@@ -27,6 +28,7 @@ export interface PurgeResult {
 		goals: number;
 		habits: number;
 		journalTemplates: number;
+		keyResults: number;
 		sessions: number;
 		linkCodes: number;
 		aiUsage: number;
@@ -58,6 +60,7 @@ export function runPurge(now: Date = new Date()): PurgeResult {
 			goals: 0,
 			habits: 0,
 			journalTemplates: 0,
+			keyResults: 0,
 			sessions: 0,
 			linkCodes: 0,
 			aiUsage: 0
@@ -71,6 +74,9 @@ export function runPurge(now: Date = new Date()): PurgeResult {
 	// habit through ON DELETE CASCADE (SPEC 6.8 names them for that reason).
 	step(result, 'habits', () => habitsRepo.purgeDeleted(cutoff));
 	step(result, 'journalTemplates', () => journalTemplatesRepo.purgeDeleted(cutoff));
+	// Key results carry their own deleted_at, so they need their own step: the
+	// goal cascade only reaches them once the goal itself is hard-deleted.
+	step(result, 'keyResults', () => keyResultsRepo.purgeDeleted(cutoff));
 	step(result, 'sessions', () => sessionsRepo.deleteExpired(now.toISOString()));
 	step(result, 'linkCodes', () => linkCodesRepo.purgeExpired(now.toISOString()));
 	step(result, 'aiUsage', () => aiUsageRepo.purgeOlderThan(usageCutoff));

@@ -80,6 +80,61 @@ describe('keyResults repo', () => {
 	});
 });
 
+describe('keyResults repo purge (SPEC 6.8)', () => {
+	const CUTOFF = '2026-09-10T00:00:00.000Z';
+
+	it('hard-deletes deleted key results older than the cutoff, keeps fresh ones', () => {
+		db = useTestDb();
+		const user = makeUser('kr-purge-a');
+		const goal = goalsRepo.createGoal(user.id, { title: 'Lebendes Ziel' });
+		const old = keyResultsRepo.createKeyResult(user.id, goal.id, { title: 'alt' });
+		const fresh = keyResultsRepo.createKeyResult(user.id, goal.id, { title: 'frisch' });
+		const live = keyResultsRepo.createKeyResult(user.id, goal.id, { title: 'nie gelöscht' });
+		keyResultsRepo.softDeleteKeyResult(user.id, old!.id);
+		keyResultsRepo.softDeleteKeyResult(user.id, fresh!.id);
+		db.prepare('UPDATE key_results SET deleted_at = ? WHERE id = ?').run(
+			'2026-09-01T00:00:00.000Z',
+			old!.id
+		);
+		db.prepare('UPDATE key_results SET deleted_at = ? WHERE id = ?').run(
+			'2026-09-20T00:00:00.000Z',
+			fresh!.id
+		);
+
+		expect(keyResultsRepo.purgeDeleted(CUTOFF)).toBe(1);
+
+		expect(keyResultsRepo.getKeyResult(user.id, old!.id)).toBeNull();
+		expect(keyResultsRepo.getKeyResult(user.id, fresh!.id)?.deleted_at).toBe(
+			'2026-09-20T00:00:00.000Z'
+		);
+		// An undeleted key result is never touched, and its goal stays alive:
+		// this is the case the goal cascade cannot reach on its own.
+		expect(keyResultsRepo.getKeyResult(user.id, live!.id)?.deleted_at).toBeNull();
+		expect(goalsRepo.getGoal(user.id, goal.id)).not.toBeNull();
+	});
+
+	it('purges across goals and users in one pass, idempotent on a second run', () => {
+		db = useTestDb();
+		const userA = makeUser('kr-purge-b');
+		const userB = makeUser('kr-purge-c');
+		const goalA = goalsRepo.createGoal(userA.id, { title: 'A-Ziel' });
+		const goalB = goalsRepo.createGoal(userB.id, { title: 'B-Ziel' });
+		const krA = keyResultsRepo.createKeyResult(userA.id, goalA.id, { title: 'A-KR' });
+		const krB = keyResultsRepo.createKeyResult(userB.id, goalB.id, { title: 'B-KR' });
+		for (const kr of [krA!, krB!]) {
+			db.prepare('UPDATE key_results SET deleted_at = ? WHERE id = ?').run(
+				'2026-09-01T00:00:00.000Z',
+				kr.id
+			);
+		}
+
+		expect(keyResultsRepo.purgeDeleted(CUTOFF)).toBe(2);
+		expect(keyResultsRepo.getKeyResult(userA.id, krA!.id)).toBeNull();
+		expect(keyResultsRepo.getKeyResult(userB.id, krB!.id)).toBeNull();
+		expect(keyResultsRepo.purgeDeleted(CUTOFF)).toBe(0);
+	});
+});
+
 describe('keyResults repo tenant separation (SPEC 6.6)', () => {
 	it('user B cannot read, change or delete user A key results', () => {
 		db = useTestDb();

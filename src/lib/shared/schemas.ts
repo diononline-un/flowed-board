@@ -74,8 +74,10 @@ const usernameField = z.preprocess(
 	z.string().regex(USERNAME_RE, copy.auth.errors.usernameInvalid)
 );
 
-// users.prefs JSON (SPEC 4.4): every field optional with a default.
-export const prefsSchema = z.object({
+// users.prefs JSON (SPEC 4.4): every field optional with a default. Strict like
+// every other API input (SPEC 6.5): an unknown preference key is rejected with
+// 422 instead of being stripped, so a typo in the client never looks applied.
+export const prefsSchema = z.strictObject({
 	gamification: z.boolean().default(true),
 	postitTilt: z.boolean().default(false),
 	reduceMotion: z.boolean().default(false),

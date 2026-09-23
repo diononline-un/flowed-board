@@ -143,3 +143,15 @@ export function softDeleteKeyResult(userId: string, id: string): PublicKeyResult
 	const updated = getKeyResult(userId, id);
 	return updated ? toPublicKeyResult(updated) : null;
 }
+
+// SPEC 6.8 purge: hard-deletes every soft-deleted key result older than the
+// retention cutoff, whatever its goal. Without this step a key result deleted
+// inside a live goal would never disappear (the goal cascade only fires when
+// the goal itself is hard-deleted) — DECISIONS: a deleted key result vanishes
+// like its title promised, independent of the goal.
+export function purgeDeleted(olderThanIso: string): number {
+	const result = getDb()
+		.prepare('DELETE FROM key_results WHERE deleted_at IS NOT NULL AND deleted_at < ?')
+		.run(olderThanIso);
+	return result.changes;
+}

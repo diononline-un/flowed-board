@@ -99,6 +99,7 @@
 				rows="2"
 				maxlength="2000"
 				placeholder={formCopy.notePlaceholder}
+				aria-describedby={error ? 'postit-form-error' : undefined}
 			></textarea>
 		</label>
 		<div class="grid grid-cols-2 gap-3">
@@ -108,6 +109,7 @@
 					type="date"
 					class="rounded-lg border border-paper-dark bg-paper px-3 py-2 text-sm text-ink"
 					bind:value={date}
+					aria-describedby={error ? 'postit-form-error' : undefined}
 				/>
 			</label>
 			<label class="flex flex-col gap-1">
@@ -116,6 +118,7 @@
 					type="time"
 					class="rounded-lg border border-paper-dark bg-paper px-3 py-2 text-sm text-ink"
 					bind:value={time}
+					aria-describedby={error ? 'postit-form-error' : undefined}
 				/>
 			</label>
 		</div>
@@ -129,6 +132,7 @@
 					min="1"
 					max="1440"
 					inputmode="numeric"
+					aria-describedby={error ? 'postit-form-error' : undefined}
 				/>
 			</label>
 			<label class="flex flex-col gap-1">
@@ -136,6 +140,7 @@
 				<select
 					class="rounded-lg border border-paper-dark bg-paper px-3 py-2 text-sm text-ink"
 					bind:value={goalId}
+					aria-describedby={error ? 'postit-form-error' : undefined}
 				>
 					<option value="">{formCopy.noGoal}</option>
 					{#each goals as goal (goal.id)}
@@ -144,7 +149,7 @@
 				</select>
 			</label>
 		</div>
-		<fieldset>
+		<fieldset aria-describedby={error ? 'postit-form-error' : undefined}>
 			<legend class="text-sm font-semibold text-ink">{formCopy.color}</legend>
 			<div class="mt-1.5 flex flex-wrap gap-1.5">
 				{#each colorChoices as choice (choice.label)}

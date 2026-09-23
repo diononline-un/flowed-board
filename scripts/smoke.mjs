@@ -5,8 +5,10 @@
 // Usage: BASE_URL=http://localhost:3000 npm run smoke
 //   BASE_URL has to match the server's ORIGIN, because every mutating request
 //   carries Origin and the CSRF guard compares the two (SPEC 6.5).
-// Exits non-zero on the first failing step and names that step. Each run uses
-// a fresh random account; the session cookie stays in memory.
+// Every step runs, even after a failure: each one names itself in the log, so
+// one run shows all broken steps at once. At the end the script prints the
+// failure count and exits 1 when at least one step failed (exit 0 otherwise).
+// Each run uses a fresh random account; the session cookie stays in memory.
 const base = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
 
 let failures = 0;

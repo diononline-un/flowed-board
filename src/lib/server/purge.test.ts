@@ -139,6 +139,60 @@ describe('runPurge', () => {
 		expect(journalTemplatesRepo.getJournalTemplateRow(userId, boundary.id)).not.toBeNull();
 	});
 
+	it('hard-deletes a deleted key result of a live goal, older than 14 days', () => {
+		const goal = goalsRepo.createGoal(userId, { title: 'Lebendes Ziel' });
+		const other = goalsRepo.createGoal(userId, { title: 'Zweites Ziel' });
+
+		const old = keyResultsRepo.createKeyResult(userId, goal.id, { title: 'alt' });
+		const fresh = keyResultsRepo.createKeyResult(userId, goal.id, { title: 'frisch' });
+		const boundary = keyResultsRepo.createKeyResult(userId, goal.id, { title: 'Grenzfall' });
+		const live = keyResultsRepo.createKeyResult(userId, other.id, { title: 'lebt' });
+		expect(old && fresh && boundary && live).not.toBeNull();
+
+		db.prepare('UPDATE key_results SET deleted_at = ? WHERE id = ?').run(daysAgo(20), old!.id);
+		db.prepare('UPDATE key_results SET deleted_at = ? WHERE id = ?').run(daysAgo(13), fresh!.id);
+		// Exactly at the cutoff: 14 days old is *not* "older than 14 days".
+		db.prepare('UPDATE key_results SET deleted_at = ? WHERE id = ?').run(daysAgo(14), boundary!.id);
+
+		const result = runPurge(NOW);
+
+		expect(result.errors).toEqual([]);
+		// The goal itself is alive, so no cascade can reach the row: the
+		// key_results step has to remove it (the M7 gap this pins down).
+		expect(result.removed.keyResults).toBe(1);
+		expect(result.removed.goals).toBe(0);
+		expect(keyResultsRepo.getKeyResult(userId, old!.id)).toBeNull();
+		expect(keyResultsRepo.getKeyResult(userId, fresh!.id)?.deleted_at).not.toBeNull();
+		expect(keyResultsRepo.getKeyResult(userId, boundary!.id)?.deleted_at).not.toBeNull();
+		expect(keyResultsRepo.getKeyResult(userId, live!.id)?.deleted_at).toBeNull();
+		expect(goalsRepo.getGoal(userId, goal.id)).not.toBeNull();
+	});
+
+	it('leaves deleted key results of a soft-deleted goal to the cascade', () => {
+		const goal = goalsRepo.createGoal(userId, { title: 'Gelöschtes Ziel' });
+		const kr = keyResultsRepo.createKeyResult(userId, goal.id, { title: 'KR am Ziel' });
+		expect(kr).not.toBeNull();
+		// The key result was deleted only 5 days ago, so its own deleted_at is
+		// still inside the retention window: the key_results step must not
+		// touch it, only the cascade of its goal may take it.
+		db.prepare('UPDATE key_results SET deleted_at = ? WHERE id = ?').run(daysAgo(5), kr!.id);
+		db.prepare('UPDATE goals SET deleted_at = ? WHERE id = ?').run(daysAgo(13), goal.id);
+
+		const result = runPurge(NOW);
+
+		// Nothing is old enough yet: the goal keeps its deleted key result.
+		expect(result.removed).toMatchObject({ goals: 0, keyResults: 0 });
+		expect(goalsRepo.getGoal(userId, goal.id)).not.toBeNull();
+		expect(keyResultsRepo.getKeyResult(userId, kr!.id)).not.toBeNull();
+
+		// Once the goal passes the cutoff it goes, and the key result with it.
+		const later = new Date(NOW.getTime() + 7 * DAY_MS);
+		const second = runPurge(later);
+		expect(second.removed).toMatchObject({ goals: 1, keyResults: 0 });
+		expect(goalsRepo.getGoal(userId, goal.id)).toBeNull();
+		expect(keyResultsRepo.getKeyResult(userId, kr!.id)).toBeNull();
+	});
+
 	it('keeps stale but live rows untouched', () => {
 		const live = postitsRepo.createPostit(userId, { title: 'nie gelöscht' });
 		db.prepare('UPDATE postits SET created_at = ? WHERE id = ?').run(daysAgo(400), live.id);

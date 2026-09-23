@@ -126,6 +126,7 @@
 					class="rounded-lg border border-paper-dark bg-paper px-3 py-2 text-sm text-ink"
 					bind:value={emoji}
 					maxlength="8"
+					aria-describedby={error ? 'habit-form-error' : undefined}
 				/>
 			</label>
 			<label class="flex flex-col gap-1">
@@ -133,6 +134,7 @@
 				<select
 					class="rounded-lg border border-paper-dark bg-paper px-3 py-2 text-sm text-ink"
 					bind:value={cadence}
+					aria-describedby={error ? 'habit-form-error' : undefined}
 				>
 					{#each cadences as option (option)}
 						<option value={option}>{formCopy.cadences[option]}</option>
@@ -148,6 +150,7 @@
 						type="date"
 						class="rounded-lg border border-paper-dark bg-paper px-3 py-2 text-sm text-ink"
 						bind:value={rangeStart}
+						aria-describedby={rangeError ? 'habit-range-error' : undefined}
 					/>
 				</label>
 				<label class="flex flex-col gap-1">
@@ -156,6 +159,7 @@
 						type="date"
 						class="rounded-lg border border-paper-dark bg-paper px-3 py-2 text-sm text-ink"
 						bind:value={rangeEnd}
+						aria-describedby={rangeError ? 'habit-range-error' : undefined}
 					/>
 				</label>
 			</div>
@@ -193,13 +197,14 @@
 			<p id="habit-max-error" class="text-xs font-semibold text-ink">{maxError}</p>
 		{/if}
 		{#if rangeError}
-			<p class="text-xs font-semibold text-ink">{rangeError}</p>
+			<p id="habit-range-error" class="text-xs font-semibold text-ink">{rangeError}</p>
 		{/if}
 		<label class="flex flex-col gap-1">
 			<span class="text-sm font-semibold text-ink">{formCopy.goal}</span>
 			<select
 				class="rounded-lg border border-paper-dark bg-paper px-3 py-2 text-sm text-ink"
 				bind:value={goalId}
+				aria-describedby={error ? 'habit-form-error' : undefined}
 			>
 				<option value="">{formCopy.noGoal}</option>
 				{#each goals as goal (goal.id)}
@@ -207,7 +212,7 @@
 				{/each}
 			</select>
 		</label>
-		<fieldset>
+		<fieldset aria-describedby={error ? 'habit-form-error' : undefined}>
 			<legend class="text-sm font-semibold text-ink">{formCopy.color}</legend>
 			<div class="mt-1.5 flex flex-wrap gap-1.5">
 				{#each colorChoices as [value, label] (value)}

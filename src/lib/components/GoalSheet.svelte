@@ -91,6 +91,7 @@
 				type="date"
 				class="rounded-lg border border-paper-dark bg-paper px-3 py-2 text-sm text-ink"
 				bind:value={targetDate}
+				aria-describedby={error ? 'goal-form-error' : undefined}
 			/>
 		</label>
 		{#if goal}
@@ -102,6 +103,7 @@
 					rows="2"
 					maxlength="2000"
 					placeholder={formCopy.notePlaceholder}
+					aria-describedby={error ? 'goal-form-error' : undefined}
 				></textarea>
 			</label>
 			<div class="grid grid-cols-2 gap-3">
@@ -112,6 +114,7 @@
 						class="rounded-lg border border-paper-dark bg-paper px-3 py-2 text-sm text-ink"
 						bind:value={emoji}
 						maxlength="8"
+						aria-describedby={error ? 'goal-form-error' : undefined}
 					/>
 				</label>
 				<label class="flex flex-col gap-1">
@@ -119,6 +122,7 @@
 					<select
 						class="rounded-lg border border-paper-dark bg-paper px-3 py-2 text-sm text-ink"
 						bind:value={status}
+						aria-describedby={error ? 'goal-form-error' : undefined}
 					>
 						{#each statusChoices as [value, label] (value)}
 							<option {value}>{label}</option>
@@ -126,7 +130,7 @@
 					</select>
 				</label>
 			</div>
-			<fieldset>
+			<fieldset aria-describedby={error ? 'goal-form-error' : undefined}>
 				<legend class="text-sm font-semibold text-ink">{formCopy.color}</legend>
 				<div class="mt-1.5 flex flex-wrap gap-1.5">
 					{#each colorChoices as [value, label] (value)}

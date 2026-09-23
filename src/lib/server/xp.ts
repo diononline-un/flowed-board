@@ -12,22 +12,34 @@ import { makeEvent, xpProgress, type XpEvent } from '$lib/shared/xp.js';
 //      IGNORE plus the UNIQUE index), so done → reopen → done cannot farm XP;
 //   2. XP never decrease — no code path subtracts.
 
-export interface XpAward {
+// The result of one award call. `total`, `level` and `levelName` always
+// describe the user's state *after* the call, even when nothing was gained
+// (`gained: 0`, e.g. a badge without XP of its own like goal_setter or
+// tidy_up) — the client can therefore take the values over unconditionally
+// instead of mistaking "nothing earned" for "no XP at all".
+export interface XpResponse {
 	gained: number;
 	total: number;
 	level: number;
 	levelName: string;
 	levelUp: boolean;
-}
-
-export interface XpResponse {
-	// Null when the action produced neither points nor a badge.
-	xp: XpAward | null;
 	// Only the badges awarded by this very request.
 	newBadges: { badge: BadgeDefinition; earnedAt: string }[];
 }
 
-export const NO_XP: XpResponse = { xp: null, newBadges: [] };
+export function emptyXpResponse(total = 0): XpResponse {
+	const progress = xpProgress(total);
+	return {
+		gained: 0,
+		total: progress.total,
+		level: progress.level,
+		levelName: progress.name,
+		levelUp: false,
+		newBadges: []
+	};
+}
+
+export const NO_XP: XpResponse = emptyXpResponse();
 
 // The badge rules need the user's day boundary (which week a log belongs to)
 // and their week start, so every award carries those two values.
@@ -139,20 +151,16 @@ export function award(
 
 	const next = xpProgress(total);
 	const previous = xpProgress(before);
-	const xp: XpAward | null =
-		gained > 0
-			? {
-					gained,
-					total,
-					level: next.level,
-					levelName: next.name,
-					levelUp: next.level > previous.level
-				}
-			: null;
-
 	const facts = gatherBadgeFacts(userId, context.today, context.weekStart, trigger);
 	const newBadges = evaluateBadges(userId, facts, trigger);
-	return { xp, newBadges: toPayload(newBadges) };
+	return {
+		gained,
+		total: next.total,
+		level: next.level,
+		levelName: next.name,
+		levelUp: gained > 0 && next.level > previous.level,
+		newBadges: toPayload(newBadges)
+	};
 }
 
 // What the sidebar and the settings page show (SPEC 5.6, 10.4). The total is

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-24 — Fix: XP-Bandgrenzen und Badge-Award ohne XP-Gewinn (M6-Nachbesserung)
+
+- `shared/xp.ts`: `xpAtLevel(L)` liefert jetzt `30 * (L−1)²` statt der Summe der Bänder. Vorher widersprachen sich `xpAtLevel` (Summe: 0, 30, 150, 480 …) und `levelFor` (Umschaltung bei `30 * (L−1)²`: 0, 30, 120, 270 …) ab Level 3: bei 120 XP war `intoLevel` −30 und `toNextLevel` 300 statt 150, bei 480 XP wurde die Balkenbreite negativ. `xpToNextLevel` rechnet jetzt `30 * level² − Fortschritt im Band` und klemmt bei 0.
+- `server/xp.ts`: `XpResponse` ist flach (`{gained, total, level, levelName, levelUp, newBadges}`) und trägt auch bei einem Badge ohne eigene XP (`goal_setter`, `tidy_up`) `total`/`level` des unveränderten Stands statt 0/0; `levelUp` ist nur bei einem echten Gewinn true. `withXp` in `http.ts` übernimmt die Werte unverändert und teilt den Payload-Typ (`XpResponsePayload`) mit dem Client.
+- `state/xp.svelte.ts`: `applyXp` setzt `total` nur noch, wenn der Server einen echten Gewinn meldet (`gained > 0` und `total > 0`) — doppelt abgesichert, damit ein Badge-Award die Sidebar nicht auf „0 XP, Level 1“ zurückwirft; `XpResponsePayload` kommt jetzt aus `shared/xp.ts` (eine Typdefinition für Server und Client).
+- Tests: Bandgrenzen als Regression (`xpAtLevel(3) = 120`, `(4) = 270`, `(5) = 480`, Konsistenzschleife über 0/29/30/60/119/120/150/269/270/480 mit `intoLevel ≥ 0`, `0 ≤ ratio ≤ 1`, Band-Start ≤ total < nächstes Band), Badge-Award ohne XP-Gewinn im Server-Payload (`gained 0`, `total 50`, Level 2) sowie die neue Client-Suite `state/xp.test.ts` (6 Tests: Store hält 45 XP bei `goal_setter`/`tidy_up`, übernimmt echte Gewinne, Levelaufstieg-Toast, keine Toasts bei `gamification=false`, `undefined`-Payload).
+- 250 Tests grün (8 neu), `npm run check` 0 Fehler, `npm run build` grün; live gegen `node build` auf Port 3105 geprüft: Badge-only-Antworten liefern echte Werte (`total: 5, level: 1` bzw. `gained: 0, total: 0, level: 1`), der XP-Balken zeigt „Noch 25 XP“ bzw. „Noch 30 XP“ statt einer negativen Breite.
+
 ## 2026-09-24 — M6: Onboarding, Seed-Inhalte, Gamification (XP, Level, Badges)
 
 - Shared: `xp.ts` mit der Punkte-Tabelle aus SPEC 5.6, den `ref_id`-Formaten, der Level-Formel `floor(sqrt(xp/30))+1` inkl. Bandgrenzen (`xpAtLevel`, `xpToNextLevel`) und den zehn Level-Namen (Kaffeebohne … Café-Legende); `badges.ts` mit den zehn Badge-Definitionen, Schwellwerten und der reinen Regel `earnedBadgeIds(facts)`; `habit.completedWeekStarts` liefert die Wochen, in denen ein Habit sein Ziel erreicht hat (Grundlage für `keeper`); `seed.ts` mit den SPEC-8.7-Definitionen; `schemas.ts` bekommt `onboardingCompleteSchema` (strict, Rhythmus + optionales Habit); `copy.ts` die Blöcke `gamification` und `onboarding`.

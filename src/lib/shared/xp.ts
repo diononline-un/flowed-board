@@ -4,6 +4,8 @@
 // P7 (rein additiv): XP only ever grow. No leaderboards, no penalties, no
 // decay — the UI merely reflects the total.
 
+import type { BadgeDefinition } from './badges.js';
+
 export const XP_KINDS = {
 	postit_done: 5,
 	habit_log: 10,
@@ -87,22 +89,23 @@ export function levelName(level: number): string {
 	return LEVEL_NAMES[Math.min(index, LEVEL_NAMES.length - 1)]!;
 }
 
-// Total XP that has to be collected to be on `level`, i.e. the sum of all
-// completed bands: 0, 30, 120, 270, 480, … (band of level n = 30 * n²).
+// XP at which a level begins. The band of level n is 30 * n² wide and the
+// switch happens at exactly that width, so the thresholds are the squares
+// themselves: level 1 at 0, level 2 at 30, level 3 at 120, level 4 at 270,
+// level 5 at 480 … — the same points `levelFor` switches at.
 export function xpAtLevel(level: number): number {
 	const completed = Math.max(0, Math.floor(level) - 1);
-	let total = 0;
-	for (let index = 1; index <= completed; index += 1) {
-		total += XP_PER_LEVEL_FACTOR * index * index;
-	}
-	return total;
+	return XP_PER_LEVEL_FACTOR * completed * completed;
 }
 
-// XP still missing inside the current band ("XP bis nächstes Level: 30 * level²").
+// XP still missing in the current band ("XP bis nächstes Level: 30 * level²",
+// SPEC 5.6). Clamped at 0 so a value above the band end can never report a
+// negative remainder.
 export function xpToNextLevel(total: number): number {
-	const level = levelFor(total);
-	const next = xpAtLevel(level + 1);
-	return Math.max(0, next - Math.max(0, total));
+	const safe = Math.max(0, Math.floor(Number.isFinite(total) ? total : 0));
+	const level = levelFor(safe);
+	const bandSize = XP_PER_LEVEL_FACTOR * level * level;
+	return Math.max(0, bandSize - (safe - xpAtLevel(level)));
 }
 
 export interface XpProgress {
@@ -152,6 +155,18 @@ export interface XpAward {
 	levelName: string;
 	// True when this award crossed a level boundary.
 	levelUp: boolean;
+}
+
+// The `xp` object of a mutation response (SPEC 5.6). Badges without XP of
+// their own (goal_setter, tidy_up) answer `gained: 0` with the level of the
+// unchanged total, so a client can tell "nothing was earned" from "reset".
+export interface XpResponsePayload {
+	gained: number;
+	total: number;
+	level: number;
+	levelName: string;
+	levelUp: boolean;
+	newBadges: { badge: BadgeDefinition; earnedAt: string }[];
 }
 
 export function makeEvent(kind: XpKind, refId: string): XpEvent {

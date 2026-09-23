@@ -12,6 +12,7 @@ import * as usersRepo from './repo/users.js';
 import * as xpEventsRepo from './repo/xpEvents.js';
 import * as badgesRepo from './repo/badges.js';
 import { awardContextFor, awardPostitDone, award, xpTotalOf } from './xp.js';
+import { withXp } from './http.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { globSync } from 'node:fs';
@@ -60,21 +61,21 @@ describe('xp points table (SPEC 5.6)', () => {
 		});
 
 		const postitAward = awardPostitDone(user.id, postit.id, CONTEXT);
-		expect(postitAward.xp?.gained).toBe(5);
+		expect(postitAward.gained).toBe(5);
 		const habitAward = award(
 			user.id,
 			[{ kind: 'habit_log', refId: `${habit.id}:2026-09-21`, points: 10 }],
 			'habit',
 			CONTEXT
 		);
-		expect(habitAward.xp?.gained).toBe(10);
+		expect(habitAward.gained).toBe(10);
 		const captureAward = award(
 			user.id,
 			[{ kind: 'capture_used', refId: 'batch-1', points: 3 }],
 			'capture',
 			CONTEXT
 		);
-		expect(captureAward.xp?.gained).toBe(3);
+		expect(captureAward.gained).toBe(3);
 
 		const refs = xpEventsRepo.listXpEvents(user.id).map((event) => `${event.kind}:${event.ref_id}`);
 		expect(refs).toContain(`postit_done:${postit.id}`);
@@ -91,13 +92,13 @@ describe('xp farming prevention (SPEC 5.6)', () => {
 
 		postitsRepo.updatePostit(user.id, postit.id, { done: true }, CONTEXT.today);
 		const first = awardPostitDone(user.id, postit.id, CONTEXT);
-		expect(first.xp?.gained).toBe(5);
+		expect(first.gained).toBe(5);
 		expect(xpTotalOf(user.id)).toBe(5);
 
 		postitsRepo.updatePostit(user.id, postit.id, { done: false }, CONTEXT.today);
 		postitsRepo.updatePostit(user.id, postit.id, { done: true }, CONTEXT.today);
 		const again = awardPostitDone(user.id, postit.id, CONTEXT);
-		expect(again.xp).toBeNull();
+		expect(again.gained).toBe(0);
 		expect(xpTotalOf(user.id)).toBe(5);
 
 		// ten more rounds change nothing
@@ -120,10 +121,10 @@ describe('xp farming prevention (SPEC 5.6)', () => {
 			maxPerDay: 2
 		});
 
-		expect(award(user.id, [{ kind: 'habit_log', refId: `${habit.id}:2026-09-21`, points: 10 }], 'habit', CONTEXT).xp?.gained).toBe(10);
+		expect(award(user.id, [{ kind: 'habit_log', refId: `${habit.id}:2026-09-21`, points: 10 }], 'habit', CONTEXT).gained).toBe(10);
 		// second tap of the same day (allowed while max_per_day is not reached)
-		expect(award(user.id, [{ kind: 'habit_log', refId: `${habit.id}:2026-09-21`, points: 10 }], 'habit', CONTEXT).xp).toBeNull();
-		expect(award(user.id, [{ kind: 'habit_log', refId: `${habit.id}:2026-09-22`, points: 10 }], 'habit', CONTEXT).xp?.gained).toBe(10);
+		expect(award(user.id, [{ kind: 'habit_log', refId: `${habit.id}:2026-09-21`, points: 10 }], 'habit', CONTEXT).gained).toBe(0);
+		expect(award(user.id, [{ kind: 'habit_log', refId: `${habit.id}:2026-09-22`, points: 10 }], 'habit', CONTEXT).gained).toBe(10);
 		expect(xpTotalOf(user.id)).toBe(20);
 	});
 
@@ -136,8 +137,8 @@ describe('xp farming prevention (SPEC 5.6)', () => {
 			targetValue: 4
 		})!;
 
-		expect(award(user.id, [{ kind: 'kr_done', refId: kr.id, points: 20 }], 'keyResult', CONTEXT).xp?.gained).toBe(20);
-		expect(award(user.id, [{ kind: 'kr_done', refId: kr.id, points: 20 }], 'keyResult', CONTEXT).xp).toBeNull();
+		expect(award(user.id, [{ kind: 'kr_done', refId: kr.id, points: 20 }], 'keyResult', CONTEXT).gained).toBe(20);
+		expect(award(user.id, [{ kind: 'kr_done', refId: kr.id, points: 20 }], 'keyResult', CONTEXT).gained).toBe(0);
 		expect(xpTotalOf(user.id)).toBe(20);
 	});
 
@@ -154,17 +155,18 @@ describe('xp farming prevention (SPEC 5.6)', () => {
 		db = useTestDb();
 		const user = makeUser('xp-farm-e');
 		expect(
-			award(user.id, [{ kind: 'journal_entry', refId: `t1:2026-09-21:08:00`, points: 15 }], 'journal', CONTEXT).xp
-				?.gained
+			award(user.id, [{ kind: 'journal_entry', refId: `t1:2026-09-21:08:00`, points: 15 }], 'journal', CONTEXT)
+				.gained
 		).toBe(15);
 		expect(
-			award(user.id, [{ kind: 'journal_entry', refId: `t1:2026-09-21:21:00`, points: 15 }], 'journal', CONTEXT).xp
-				?.gained
+			award(user.id, [{ kind: 'journal_entry', refId: `t1:2026-09-21:21:00`, points: 15 }], 'journal', CONTEXT)
+				.gained
 		).toBe(15);
 		// same slot twice is a repeat
 		expect(
-			award(user.id, [{ kind: 'journal_entry', refId: `t1:2026-09-21:08:00`, points: 15 }], 'journal', CONTEXT).xp
-		).toBeNull();
+			award(user.id, [{ kind: 'journal_entry', refId: `t1:2026-09-21:08:00`, points: 15 }], 'journal', CONTEXT)
+				.gained
+		).toBe(0);
 		expect(xpTotalOf(user.id)).toBe(30);
 	});
 });
@@ -243,20 +245,73 @@ describe('level formula (SPEC 5.6)', () => {
 	});
 
 	it('reports the XP up to the next level as 30 * level² minus the band progress', () => {
+		// The band of level n is 30 * n² wide and `levelFor` switches at exactly
+		// that width, so the thresholds are the squares: 0, 30, 120, 270, 480 …
 		expect(xpAtLevel(1)).toBe(0);
 		expect(xpAtLevel(2)).toBe(30);
-		// sum of the bands: 30*1² + 30*2²
-		expect(xpAtLevel(3)).toBe(150);
-		expect(xpAtLevel(10)).toBe(30 * (1 + 4 + 9 + 16 + 25 + 36 + 49 + 64 + 81));
+		expect(xpAtLevel(3)).toBe(120);
+		expect(xpAtLevel(4)).toBe(270);
+		expect(xpAtLevel(5)).toBe(480);
+		expect(xpAtLevel(10)).toBe(30 * 81);
 		expect(xpToNextLevel(0)).toBe(30);
 		expect(xpToNextLevel(10)).toBe(20);
 		expect(xpToNextLevel(30)).toBe(120); // level 2, band size 120
+		expect(xpToNextLevel(120)).toBe(270); // level 3, band size 270
 		const progress = xpProgress(45);
 		expect(progress.level).toBe(2);
 		expect(progress.bandSize).toBe(120);
 		expect(progress.intoLevel).toBe(15);
 		expect(progress.toNextLevel).toBe(105);
 		expect(progress.name).toBe('Espresso');
+	});
+
+	it('keeps the progress values consistent at every band boundary', () => {
+		// Regression: `xpAtLevel` used to sum the bands (0, 30, 150, 480 …) while
+		// `levelFor` switched at 30 * (level-1)², which produced a negative
+		// `intoLevel`, a negative bar width and a wrong `toNextLevel` from
+		// level 3 on.
+		for (const total of [0, 29, 30, 60, 119, 120, 150, 269, 270, 480]) {
+			const progress = xpProgress(total);
+			expect(progress.level, `level at ${total}`).toBe(levelFor(total));
+			expect(progress.toNextLevel, `toNextLevel at ${total}`).toBe(
+				Math.max(0, 30 * progress.level * progress.level - progress.intoLevel)
+			);
+			expect(progress.intoLevel, `intoLevel at ${total}`).toBeGreaterThanOrEqual(0);
+			expect(progress.intoLevel, `intoLevel at ${total}`).toBeLessThan(progress.bandSize);
+			expect(progress.ratio, `ratio at ${total}`).toBeGreaterThanOrEqual(0);
+			expect(progress.ratio, `ratio at ${total}`).toBeLessThanOrEqual(1);
+			expect(xpToNextLevel(total), `xpToNextLevel at ${total}`).toBe(progress.toNextLevel);
+			// the reported band start is the point the level really begins at
+			expect(xpAtLevel(progress.level), `band start at ${total}`).toBeLessThanOrEqual(total);
+			expect(xpAtLevel(progress.level + 1), `next band start at ${total}`).toBeGreaterThan(total);
+		}
+		expect(xpProgress(120).intoLevel).toBe(0);
+		expect(xpProgress(120).toNextLevel).toBe(270);
+		expect(xpProgress(480).ratio).toBe(0);
+	});
+
+	it('reports the unchanged level for a badge without XP (gained 0)', () => {
+		db = useTestDb();
+		const user = makeUser('xp-badge-only');
+		const goal = goalsRepo.createGoal(user.id, { title: 'Ziel' });
+		// a real gain first, so the total is not 0
+		postitsRepo.createPostit(user.id, { title: 'x' });
+		award(user.id, [{ kind: 'goal_done', refId: goal.id, points: 50 }], 'goal', CONTEXT);
+		expect(xpTotalOf(user.id)).toBe(50);
+
+		// the cleanup trigger awards no XP, only its badge
+		const again = award(user.id, [], 'cleanup', CONTEXT);
+		expect(again.gained).toBe(0);
+		expect(again.newBadges.map((entry) => entry.badge.id)).toEqual(['tidy_up']);
+		// the response built from it carries the level of the unchanged total
+		// (not 0/level 1), which is what keeps the sidebar chip stable
+		const payload = withXp({ ok: true }, again).xp;
+		expect(payload?.gained).toBe(0);
+		expect(payload?.total).toBe(50);
+		expect(payload?.level).toBe(2);
+		expect(payload?.levelName).toBe('Espresso');
+		// and the total itself is untouched
+		expect(xpTotalOf(user.id)).toBe(50);
 	});
 });
 
@@ -272,8 +327,8 @@ describe('xp award payload', () => {
 		let levelUp = false;
 		for (const [index, id] of ids.entries()) {
 			const result = awardPostitDone(user.id, id, CONTEXT);
-			expect(result.xp?.gained).toBe(5);
-			if (index === 5) levelUp = result.xp?.levelUp === true;
+			expect(result.gained).toBe(5);
+			if (index === 5) levelUp = result.levelUp;
 		}
 		expect(levelUp).toBe(true);
 		expect(xpTotalOf(user.id)).toBe(30);

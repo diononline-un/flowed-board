@@ -123,7 +123,7 @@ describe('badge triggers (SPEC 5.6)', () => {
 		// the badge check runs after the goal exists
 		expect(result.newBadges).toEqual([]);
 		const after = badgeOnlyResponse(user.id, 'goal', CONTEXT);
-		expect(after.xp).toBeNull();
+		expect(after.gained).toBe(0);
 		expect(after.newBadges.map((entry) => entry.badge.id)).toEqual(['goal_setter']);
 		expect(earnedIds(user.id)).toEqual(['goal_setter']);
 	});
@@ -133,7 +133,7 @@ describe('badge triggers (SPEC 5.6)', () => {
 		const user = makeUser('bg-quick-writer');
 		postitsRepo.createPostit(user.id, { title: 'Aus Capture', batchId: 'batch-1' });
 		const result = award(user.id, [makeEvent('capture_used', 'batch-1')], 'capture', CONTEXT);
-		expect(result.xp?.gained).toBe(3);
+		expect(result.gained).toBe(3);
 		expect(result.newBadges.map((entry) => entry.badge.id)).toEqual(['quick_writer']);
 	});
 
@@ -261,7 +261,7 @@ describe('badge triggers (SPEC 5.6)', () => {
 		goalsRepo.updateGoal(user.id, goal.id, { status: 'done' });
 
 		const result = award(user.id, [makeEvent('goal_done', goal.id)], 'goal', CONTEXT);
-		expect(result.xp?.gained).toBe(50);
+		expect(result.gained).toBe(50);
 		expect(result.newBadges.map((entry) => entry.badge.id)).toEqual(['finisher']);
 	});
 
@@ -273,7 +273,7 @@ describe('badge triggers (SPEC 5.6)', () => {
 		postitsRepo.cleanupPostits(user.id, [postit.id], 'today', TODAY);
 
 		const result = award(user.id, [], 'cleanup', CONTEXT);
-		expect(result.xp).toBeNull();
+		expect(result.gained).toBe(0);
 		expect(result.newBadges.map((entry) => entry.badge.id)).toEqual(['tidy_up']);
 	});
 });

@@ -1,4 +1,5 @@
 import type { Prefs } from './schemas.js';
+import type { HabitCadence } from './habit.js';
 
 // Shared domain types (SPEC 4). Row types mirror the SQLite schema 1:1
 // (snake_case); Public* types are the camelCase shapes exposed to clients.
@@ -61,6 +62,9 @@ export type Horizon = 'short' | 'mid' | 'long';
 export type PostitColor = 'butter' | 'mint' | 'sky' | 'blush' | 'sand' | 'sage' | 'lilac';
 export type GoalStatus = 'active' | 'done' | 'archived';
 export type KeyResultKind = 'number' | 'check';
+// The habit cadence lives with the SPEC 5.5 window rules; re-exported here so
+// row and public types read from one module.
+export type { HabitCadence } from './habit.js';
 
 export interface GoalRow {
 	id: string;
@@ -195,4 +199,33 @@ export interface PublicPostit {
 	updatedAt: string;
 	doneAt: string | null;
 	deletedAt: string | null;
+}
+
+export interface PublicHabit {
+	id: string;
+	goalId: string | null;
+	title: string;
+	emoji: string | null;
+	color: PostitColor;
+	cadence: HabitCadence;
+	targetCount: number;
+	rangeStart: string | null;
+	rangeEnd: string | null;
+	maxPerDay: number;
+	position: number;
+	isExample: boolean;
+	createdAt: string;
+	updatedAt: string;
+	archivedAt: string | null;
+	deletedAt: string | null;
+}
+
+// Logs are only ever shown as dates and counts (SPEC 8.4), so the client
+// shape stays deliberately small.
+export interface PublicHabitLog {
+	id: string;
+	habitId: string;
+	logDate: string;
+	source: 'tap' | 'postit';
+	createdAt: string;
 }

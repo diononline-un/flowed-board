@@ -314,3 +314,69 @@ export const captureUndoSchema = z.strictObject({
 	batchId: z.string().min(1).max(64)
 });
 export type CaptureUndoInput = z.infer<typeof captureUndoSchema>;
+
+// --- M4: habits and habit logs (SPEC 5.5, 7) --------------------------------
+
+const habitCadenceField = z.enum(['week', 'month', 'range']);
+
+const habitTitleField = z.string().trim().min(1).max(80);
+
+const targetCountField = z.number().int().min(1).max(10000);
+const maxPerDayField = z.number().int().min(1).max(20);
+
+// range habits must carry a start and an end, end >= start (SPEC 4.2 CHECK).
+const rangeRefinement = (value: { cadence?: string; rangeStart?: string | null; rangeEnd?: string | null }) => {
+	if (value.cadence !== 'range') return true;
+	if (!value.rangeStart || !value.rangeEnd) return false;
+	return value.rangeEnd >= value.rangeStart;
+};
+
+export const habitCreateSchema = z
+	.strictObject({
+		title: habitTitleField,
+		emoji: z.string().max(8).nullable().optional(),
+		color: colorField.optional(),
+		cadence: habitCadenceField,
+		targetCount: targetCountField.default(1),
+		rangeStart: ymdField.nullable().optional(),
+		rangeEnd: ymdField.nullable().optional(),
+		maxPerDay: maxPerDayField.default(1),
+		goalId: z.string().min(1).nullable().optional()
+	})
+	.refine(rangeRefinement, { message: copy.calendar.errors.rangeRequired, path: ['rangeEnd'] });
+export type HabitCreateInput = z.infer<typeof habitCreateSchema>;
+
+export const habitPatchSchema = z
+	.strictObject({
+		title: habitTitleField.optional(),
+		emoji: z.string().max(8).nullable().optional(),
+		color: colorField.optional(),
+		cadence: habitCadenceField.optional(),
+		targetCount: targetCountField.optional(),
+		rangeStart: ymdField.nullable().optional(),
+		rangeEnd: ymdField.nullable().optional(),
+		maxPerDay: maxPerDayField.optional(),
+		goalId: z.string().min(1).nullable().optional(),
+		// true archives (archived_at), false restores the habit to the bar.
+		archived: z.boolean().optional(),
+		position: z.number().finite().optional()
+	})
+	.refine(rangeRefinement, { message: copy.calendar.errors.rangeRequired, path: ['rangeEnd'] });
+export type HabitPatchInput = z.infer<typeof habitPatchSchema>;
+
+export const habitsQuerySchema = z.strictObject({
+	archived: z.enum(['0', '1']).optional()
+});
+export type HabitsQueryInput = z.infer<typeof habitsQuerySchema>;
+
+export const habitLogTapSchema = z.strictObject({
+	date: ymdField,
+	delta: z.union([z.literal(1), z.literal(-1)])
+});
+export type HabitLogTapInput = z.infer<typeof habitLogTapSchema>;
+
+export const habitLogsQuerySchema = z.strictObject({
+	from: ymdField.optional(),
+	to: ymdField.optional()
+});
+export type HabitLogsQueryInput = z.infer<typeof habitLogsQuerySchema>;

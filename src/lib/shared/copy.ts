@@ -130,7 +130,100 @@ export const copy = {
 	calendar: {
 		title: 'Kalender',
 		emptyTitle: 'Dein Kalender ist noch leer',
-		emptyHint: 'Post-its mit Datum erscheinen hier ganz von selbst.'
+		emptyHint: 'Post-its mit Datum erscheinen hier ganz von selbst.',
+		views: {
+			week: 'Woche',
+			month: 'Monat'
+		},
+		viewLabel: 'Ansicht',
+		previous: 'Zurück',
+		next: 'Weiter',
+		todayButton: 'Heute',
+		dayEmpty: '—',
+		moreInDay: (count: number) => `+${count} mehr`,
+		dayPostits: (day: string) => `Post-its am ${day}`,
+		// SPEC 8.4: tapping a post-it in the calendar opens the edit sheet.
+		editTitle: 'Post-it bearbeiten',
+		habitsTitle: 'Habits',
+		habitsEmpty: 'Noch keine Habits — leg dein erstes an.',
+		habitsArchived: 'Archivierte Habits',
+		newHabit: 'Neues Habit',
+		editHabit: 'Habit bearbeiten',
+		openMenu: 'Aktionen',
+		archive: 'Archivieren',
+		unarchive: 'Wieder aktivieren',
+		deleteHabit: 'Habit löschen',
+		progressCount: (count: number, target: number) => `${count} von ${target}`,
+		// P3: completed windows, never a streak. The value never sinks.
+		periodsDone: {
+			week: (count: number) => `Wochen geschafft: ${count}`,
+			month: (count: number) => `Monate geschafft: ${count}`,
+			range: (count: number) => `Wochen geschafft: ${count}`
+		},
+		bestWeek: (count: number) => `Beste Woche: ${count}`,
+		bestMonth: (count: number) => `Bester Monat: ${count}`,
+		windowLabel: (from: string, to: string) => `${from} – ${to}`,
+		// SPEC 5.5 pace text, `range` habits only. Sage for good news, sand
+		// for the neutral rest — never red.
+		pace: {
+			upcoming: (date: string) => `Startet am ${date}.`,
+			achieved: 'Geschafft 🎉',
+			expired: (count: number, target: number) => `Zeitraum vorbei: ${count} von ${target} — stark!`,
+			onTrack: 'Du liegst im Plan.',
+			behind: (remaining: number, perWeek: number) =>
+				`Noch ${remaining} bis zum Ziel — etwa ${perWeek} pro Woche.`
+		},
+		log: {
+			add: 'Heute eintragen',
+			remove: 'Letzten Eintrag von heute zurücknehmen',
+			count: (count: number) => `${count}× heute`,
+			limitReached: 'Maximum für heute erreicht',
+			saved: 'Eingetragen',
+			removed: 'Eintrag zurückgenommen',
+			error: 'Das hat nicht geklappt — versuch es nochmal.',
+			errors: {
+				future: 'Dieses Datum liegt in der Zukunft.',
+				tooOld: 'Das liegt mehr als 60 Tage zurück.',
+				outsideRange: 'Dieser Tag liegt außerhalb des Zeitraums.',
+				maxPerDay: 'Maximum für heute erreicht',
+				noLog: 'Für diesen Tag gibt es nichts zurückzunehmen.'
+			}
+		},
+		form: {
+			title: 'Titel',
+			titlePlaceholder: 'z. B. Laufen',
+			emoji: 'Emoji (optional)',
+			color: 'Farbe',
+			cadence: 'Rhythmus',
+			cadences: {
+				week: 'Pro Woche',
+				month: 'Pro Monat',
+				range: 'Fester Zeitraum'
+			},
+			targetCount: 'Ziel-Anzahl',
+			rangeStart: 'Zeitraum von',
+			rangeEnd: 'Zeitraum bis',
+			maxPerDay: 'Maximum pro Tag',
+			goal: 'Ziel (optional)',
+			noGoal: 'Kein Ziel',
+			save: 'Speichern',
+			create: 'Anlegen',
+			cancel: 'Abbrechen',
+			deleteHint: 'Löschen entfernt das Habit samt seiner Einträge.'
+		},
+		errors: {
+			rangeRequired: 'Für einen festen Zeitraum brauchst du Start und Ende.',
+			targetInvalid: 'Bitte eine Zahl zwischen 1 und 10000.',
+			maxPerDayInvalid: 'Bitte eine Zahl zwischen 1 und 20.'
+		},
+		toast: {
+			created: 'Habit angelegt',
+			updated: 'Habit gespeichert',
+			archived: 'Habit archiviert',
+			unarchived: 'Habit wieder aktiv',
+			deleted: 'Habit gelöscht',
+			postitSaved: 'Post-it gespeichert'
+		}
 	},
 	capture: {
 		fabLabel: 'Schnell erfassen',

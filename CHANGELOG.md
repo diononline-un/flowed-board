@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-21 — M4: Kalender (Woche/Monat) + Tracker (Habits, Logs, Fortschritt)
+
+- Shared: `habit.ts` mit Fensterberechnung SPEC 5.5 (week/month/range), Zähler, `isLogDateAllowed` (60 Tage/keine Zukunft), „Wochen/Monate geschafft" + „Beste Woche/Bester Monat" ohne Streak (sinkt nie) und den vier `range`-Tempo-Fällen; `calendar.ts` liefert Wochen-/Monatsgitter (week_start-abhängig), Fenster-Shift und Label. Beide mit Unit-Tests (19 + 6 neu).
+- Repo: `repo/habits.ts` vollständig (anlegen/ändern/archivieren/soft-delete/restore, goalId-Verknüpfung, per-User-Position) und `repo/habitLogs.ts` (Tap-Log +1/−1 löscht den jüngsten Tap-Log des Tages, max_per_day, 60-Tage- und range-Fenster-Prüfung, `listForHabit` mit from/to); Post-it-Logs aus M2 bleiben unberührt. Tests inkl. Mandantentrennung und der SPEC-5.3-Nebenwirkung.
+- API: `GET/POST /api/habits`, `PATCH/DELETE /api/habits/:id`, `POST /api/habits/:id/restore`, `GET/POST /api/habits/:id/logs` — alle zod-strict, fremde IDs 404, fremdes Ziel 422.
+- UI: `/calendar` mit Wochen- (Default) und Monatsansicht (Umschalter, „Heute", Blättern, Refetch des Fensters), Tageszellen mit max. 3 Post-its + „+n mehr" und durchgestrichenen erledigten, Post-it-Tap öffnet das Bearbeiten-Sheet (Datum/Uhrzeit/Dauer) — die Board-Horizont-Anzeige folgt automatisch (AC10). Darunter die Habit-Leiste (`HabitBar`, `HabitLogButton`) mit Fortschritt, 5.5-Texten in Sage/Sand (nie Rot), Tap-Ziel für heute und Maximum-Hinweis, plus Habit-Sheet zum Anlegen/Bearbeiten/Archivieren/Löschen; alle Schreibpfade optimistisch mit Rollback und Fehlertoast.
+- Gates: `npm run check` 0 Fehler, `npm test` 157/157 grün, `npm run build` grün (inkl. `npm run icons`); AC10–AC12 zusätzlich live gegen `node build` auf Port 3103 geprüft.
+
 ## 2026-09-21 — M3: Quick Capture (LLM-Parsing, Vorschau, Commit, Undo, Fallback, Consent)
 
 - Server: `llm.ts` (OpenAI-kompatibel per fetch, 8-s-Timeout, JSON-Modus per `LLM_JSON_MODE`, fester System-Prompt SPEC 9.2, zod-Parse) und `capture.ts` (Rate-Limit → Consent-Gate → Tageslimit via `ai_usage` → LLM → Fallback 9.4, kein DB-Write in parse); `repo/aiUsage.ts` neu, `findByTitle` für goals/habits, `softDeleteBatch` für postits.

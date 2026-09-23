@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-24 — Fix 2: Level-Breite statt Level-Schwelle in der XP-Anzeige (M6-Nachbesserung)
+
+- `shared/xp.ts` trennt jetzt kumulative Schwelle und relative Restmenge: `xpAtLevel(L) = B(L) = 30·(L−1)²` (Level-Start), neu `xpBandWidth(L) = B(L+1) − B(L) = 30·(2L − 1)` (Breite des Levels), `intoLevel = total − B(level)`, `toNextLevel = B(level+1) − total` (geklemmt auf ≥ 0), `ratio = intoLevel / bandWidth`. Vorher rechnete `toNextLevel` die Schwelle minus Level-Fortschritt: bei 120 XP wurden 270 statt 150 fehlende XP gemeldet, bei 269 XP 121 statt 1, und der Balken erreichte mit `30·level²` als Nenner nie 100 % (119 XP → 89/120 = 0,74 statt 89/90).
+- `XpProgress.bandSize` heißt `bandWidth` und liefert echte Level-Breiten (30/90/150/210/270 …) statt der Schwellen (30/120/270/480); `XpBar` nutzt sie für `aria-valuemax`, während `intoLevel` (aria-valuenow), `ratio` (Breite) und `toNextLevel` (Text) unverändert daran hängen. Kommentare in `xp.ts` sagen ausdrücklich, dass `30 * level²` aus SPEC 5.6 die kumulative Level-Schwelle ist, nicht die Restmenge.
+- Verbraucher geprüft: `XpBar` (Sidebar-Chip, Settings, Onboarding-Chips), `LevelBadge`, `GET /api/summary` und der Settings-Load (`progressFor`) verwenden die Felder in der korrigierten Bedeutung.
+- Tests: die Vertragstabelle 0/29/30/119/120/269/270/480 (Level, `intoLevel`, `bandWidth`, `toNextLevel`, `ratio`) plus je Zeile `B(level) + intoLevel = total` und `xpAtLevel(level+1) − xpAtLevel(level) = bandWidth`; Trennungstest Schwelle vs. Breite mit Summenprobe; Konsistenzschleife über 18 Summen bis 3150 XP inkl. geklemmter Eingaben (`-5`, `NaN`); der Client-Store prüft die Bandwerte mit.
+- 251 Tests grün, `npm run check` 0 Fehler, `npm run build` grün; live geprüft auf Port 3105: 0 XP → `toNextLevel 30`, 30 XP → Level 2 „Espresso" `toNextLevel 90`, 140 XP → Level 3 „Flat White" `intoLevel 20`, `bandWidth 150`, `toNextLevel 130`, `ratio 0.133`; `/settings`-SSR zeigt „Noch 130 XP bis zum nächsten Level". Demo-Port 2016 unberührt.
+
 ## 2026-09-24 — Fix: XP-Bandgrenzen und Badge-Award ohne XP-Gewinn (M6-Nachbesserung)
 
 - `shared/xp.ts`: `xpAtLevel(L)` liefert jetzt `30 * (L−1)²` statt der Summe der Bänder. Vorher widersprachen sich `xpAtLevel` (Summe: 0, 30, 150, 480 …) und `levelFor` (Umschaltung bei `30 * (L−1)²`: 0, 30, 120, 270 …) ab Level 3: bei 120 XP war `intoLevel` −30 und `toNextLevel` 300 statt 150, bei 480 XP wurde die Balkenbreite negativ. `xpToNextLevel` rechnet jetzt `30 * level² − Fortschritt im Band` und klemmt bei 0.

@@ -8,6 +8,7 @@
 		Target,
 		Trash2
 	} from 'lucide-svelte';
+	import ExampleChip from './ExampleChip.svelte';
 	import { copy } from '$lib/shared/copy.js';
 	import { formatDe } from '$lib/shared/date.js';
 	import type { Horizon, PublicGoal, PublicPostit } from '$lib/shared/types.js';
@@ -134,6 +135,9 @@
 						<span class="rounded-pill bg-sand/70 px-2 py-0.5 text-xs font-semibold text-ink">
 							{copy.plans.overdueChip}
 						</span>
+					{/if}
+					{#if postit.isExample}
+						<ExampleChip />
 					{/if}
 				</div>
 			</div>

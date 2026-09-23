@@ -44,6 +44,43 @@ export function goalProgress(krs: ProgressKeyResult[], postits: ProgressPostit[]
 	return 0;
 }
 
+// SPEC 5.6 `kr_done`: the moment a key result reaches its target. A `check`
+// key result reaches it only by being ticked (`current >= 1`), a `number` one
+// by `current >= target`.
+export function keyResultTargetReached(kr: {
+	kind: KeyResultKind;
+	target_value: number;
+	current_value: number;
+}): boolean {
+	if (kr.kind === 'check') return kr.current_value >= 1;
+	return kr.current_value >= kr.target_value;
+}
+
+// Same rule for the camelCase client shape.
+export function keyResultTargetReachedPublic(kr: {
+	kind: KeyResultKind;
+	targetValue: number;
+	currentValue: number;
+}): boolean {
+	return keyResultTargetReached({
+		kind: kr.kind,
+		target_value: kr.targetValue,
+		current_value: kr.currentValue
+	});
+}
+
+// SPEC 5.6 `halfway`: a key result at 50 % or more of its target. A `check`
+// key result is either done or not, so ticking it counts as half done at least.
+export function keyResultAtLeastHalfPublic(kr: {
+	kind: KeyResultKind;
+	targetValue: number;
+	currentValue: number;
+}): boolean {
+	if (kr.kind === 'check') return kr.currentValue >= 1;
+	if (kr.targetValue <= 0) return false;
+	return kr.currentValue / kr.targetValue >= 0.5;
+}
+
 // Convenience wrapper over the camelCase Public* shapes used by page loads
 // and client state — one mapping, shared by server and browser.
 export function progressOfGoal(

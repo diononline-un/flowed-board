@@ -1,7 +1,7 @@
 ---
 repo: flowed-board
 status: in-development
-progress: 70
+progress: 80
 tags: [sveltekit, svelte5, sqlite, selfhosted, docker]
 last_updated: 2026-09-24
 ---
@@ -17,5 +17,6 @@ Selbstgehostete App für Wochenplanung, Habit-Tracking und Journaling (SvelteKit
 - [x] M3: Quick Capture (LLM-Parsing, Fallback, Consent)
 - [x] M4: Kalender + Habits (Logs, Fortschritt, Wochen-/Monatsansicht)
 - [x] M5: Journal (Vorlagen, Einträge, In-App-Erinnerung über die Heute-Karte, Verlauf)
-- [ ] M6: Onboarding, Seed-Inhalte, Gamification (XP, Level, Badges)
+- [x] M6: Onboarding, Seed-Inhalte, Gamification (XP, Level, Badges)
+- [ ] M7: Settings vollständig, PWA-Manifest + Icons, A11y-Pass, README, Smoke-Skript, Politur
 - [ ] M7-Nachtrag: `purge.ts` (SPEC 6.8 — Hartes Löschen nach 14 Tagen, abgelaufene Sessions, `ai_usage` > 7 Tage); Controller-Ruling: wird in M7 gebaut

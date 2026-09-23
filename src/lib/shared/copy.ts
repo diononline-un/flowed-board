@@ -263,6 +263,43 @@ export const copy = {
 		settingsToggle: 'KI-Erkennung aktiv',
 		settingsSaved: 'Gespeichert.'
 	},
+	onboarding: {
+		title: 'Willkommen bei FlowBoard',
+		intro: 'Vier kurze Schritte — du kannst jeden überspringen.',
+		stepLabel: (current: number, total: number) => `Schritt ${current} von ${total}`,
+		skip: 'Überspringen',
+		skipAll: 'Alles überspringen',
+		next: 'Weiter',
+		finish: 'Los geht’s',
+		back: 'Zurück',
+		nameTitle: 'Wie sollen wir dich nennen?',
+		nameHint: 'Dein Name erscheint nur bei dir.',
+		weekTitle: 'Was willst du diese Woche angehen?',
+		weekHint: 'Schreib es hin — wir sortieren es für dich.',
+		habitTitle: 'Ein Habit zum Dranbleiben',
+		habitHint: 'Kleine, wiederkehrende Schritte. Später jederzeit änderbar.',
+		habitSuggestion: 'Vorschlag übernehmen',
+		habitSuggestionTitle: 'Drei Mal die Woche bewegen',
+		habitTitleLabel: 'Habit',
+		habitTargetLabel: 'Wie oft pro Woche?',
+		habitSkipped: 'Ohne Habit weiter — du kannst jederzeit eins anlegen.',
+		rhythmTitle: 'Wann willst du journalen?',
+		rhythmHint: 'Das legt nur den Zeitplan der Standardvorlagen fest.',
+		rhythms: {
+			morning: 'Morgens, 8 Uhr',
+			evening: 'Abends, 21 Uhr',
+			off: 'Ohne Erinnerung'
+		},
+		doneTitle: 'Fertig serviert',
+		doneHint: 'Dein Board ist vorbereitet — schau dich um.',
+		// Chips above the steps: what the week already holds.
+		dueChip: (count: number) =>
+			count === 0 ? 'Heute ist nichts offen' : `Heute offen: ${count}`,
+		weekChip: (done: number, total: number) => `Diese Woche: ${done} von ${total} erledigt`,
+		error: 'Das hat nicht geklappt — versuch es nochmal.',
+		seeded: 'Wir haben Beispiel-Inhalte vorbereitet.',
+		progressLabel: 'Fortschritt im Onboarding'
+	},
 	journal: {
 		title: 'Journal',
 		emptyTitle: 'Noch keine Einträge',
@@ -409,6 +446,24 @@ export const copy = {
 			templateInactive: 'Diese Vorlage ist deaktiviert — aktiviere sie zuerst.'
 		}
 	},
+	gamification: {
+		// P7: purely additive. No ranking, no penalty, no "you lost".
+		title: 'Fortschritt',
+		xpLabel: (total: number) => `${total} XP`,
+		levelShort: (level: number) => `Level ${level}`,
+		levelLabel: (level: number, name: string) => `Level ${level} · ${name}`,
+		toNext: (missing: number) => `Noch ${missing} XP bis zum nächsten Level`,
+		badgesTitle: 'Abzeichen',
+		badgesHint: 'Kleine Meilensteine, die du unterwegs einsammelst.',
+		badgeEarned: 'Erreicht',
+		badgeOpen: 'Noch offen',
+		badgeEarnedOn: (date: string) => `Erreicht am ${date}`,
+		settingsTitle: 'Gamification',
+		settingsHint:
+			'XP, Level und Abzeichen werden immer mitgeschrieben — hier schaltest du nur die Anzeige und die Hinweise um.',
+		settingsToggle: 'XP, Level und Abzeichen anzeigen',
+		exampleChip: 'Beispiel'
+	},
 	settings: {
 		title: 'Settings',
 		emptyTitle: 'Noch nichts einzustellen',
@@ -534,7 +589,10 @@ export const copy = {
 		placeholderBadge: 'Muster'
 	},
 	toast: {
-		close: 'Schließen'
+		close: 'Schließen',
+		xpGained: (points: number) => `+${points} XP`,
+		levelUp: (level: number, name: string) => `Level ${level}: ${name}!`,
+		badgeEarned: (name: string) => `Neues Abzeichen: ${name}`
 	},
 	errors: {
 		invalidBody: 'Ungültige Anfrage.',

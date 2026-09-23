@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { CalendarDays, NotebookPen, Plus, Settings, StickyNote } from 'lucide-svelte';
+	import LevelBadge from './LevelBadge.svelte';
 	import { openCapture } from '$lib/state/capture.svelte.js';
+	import { xpStore } from '$lib/state/xp.svelte.js';
 	import { copy } from '$lib/shared/copy.js';
 
 	// Desktop navigation (SPEC 10.3): full sidebar >= 1024px, icon rail
 	// 768–1024px. The Quick-Capture input sits fixed at the top (SPEC 10.3).
+	// The level chip is additive and only shown when gamification is on
+	// (SPEC 5.6, P7).
 	const items = [
 		{ href: '/plans', label: copy.nav.plans, icon: StickyNote },
 		{ href: '/calendar', label: copy.nav.calendar, icon: CalendarDays },
@@ -77,4 +81,9 @@
 			</a>
 		{/each}
 	</nav>
+	{#if xpStore.gamification}
+		<div class="hidden px-3 pb-4 lg:block">
+			<LevelBadge total={xpStore.total} showName />
+		</div>
+	{/if}
 </aside>

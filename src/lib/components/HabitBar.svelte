@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ExampleChip from './ExampleChip.svelte';
 	import { Ellipsis } from 'lucide-svelte';
 	import { copy } from '$lib/shared/copy.js';
 	import { formatDe } from '$lib/shared/date.js';
@@ -76,6 +77,9 @@
 				<span class="rounded-pill bg-paper-dark/70 px-2 py-0.5 text-xs font-semibold text-ink-soft">
 					{copy.calendar.form.cadences[habit.cadence]}
 				</span>
+				{#if habit.isExample}
+					<ExampleChip />
+				{/if}
 			</div>
 			<p class="mt-1 text-sm font-semibold text-ink">
 				{copy.calendar.progressCount(progress.count, progress.target)}

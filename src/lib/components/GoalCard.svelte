@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ExampleChip from './ExampleChip.svelte';
 	import { ChevronRight } from 'lucide-svelte';
 	import { copy } from '$lib/shared/copy.js';
 	import type { PublicGoal } from '$lib/shared/types.js';
@@ -41,6 +42,9 @@
 			<span class="truncate text-sm font-bold text-ink">
 				{#if goal.emoji}<span aria-hidden="true">{goal.emoji} </span>{/if}{goal.title}
 			</span>
+			{#if goal.isExample}
+				<ExampleChip />
+			{/if}
 		</span>
 		<span
 			class="h-1.5 w-full overflow-hidden rounded-pill bg-paper-dark"

@@ -125,6 +125,15 @@ export function setRecoveryConfirmed(userId: string, confirmedAt: string): Publi
 	return getPublicById(userId);
 }
 
+// SPEC 8.6: finishing (or skipping) the onboarding stamps this once; the
+// layout guard never sends the user back to /onboarding afterwards (AC16).
+export function setOnboardingDone(userId: string, doneAt: string): PublicUser | null {
+	getDb()
+		.prepare('UPDATE users SET onboarding_done_at = ? WHERE id = ?')
+		.run(doneAt, userId);
+	return getPublicById(userId);
+}
+
 // SPEC 6.4: last_activity_at is written at most once per minute.
 export function touchActivity(userId: string, minIntervalMs = 60_000): boolean {
 	const row = getDb()

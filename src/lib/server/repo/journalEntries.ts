@@ -43,6 +43,15 @@ export function getJournalEntry(userId: string, id: string): PublicJournalEntry 
 	return row ? toPublicJournalEntry(row) : null;
 }
 
+// SPEC 5.6 badge rule (journal_starter/journal_regular): every entry counts,
+// including entries whose template was deactivated later (AC14).
+export function countJournalEntries(userId: string): number {
+	const row = getDb()
+		.prepare('SELECT COUNT(*) AS n FROM journal_entries WHERE user_id = ?')
+		.get(userId) as { n: number };
+	return row.n;
+}
+
 // History list (SPEC 7: GET /api/journal/entries?from,to); newest day first,
 // inside a day the scheduled slots in ascending order, manual entries last.
 export function listJournalEntries(

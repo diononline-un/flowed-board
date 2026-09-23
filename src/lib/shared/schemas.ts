@@ -556,3 +556,25 @@ export const journalEntriesQuerySchema = z.strictObject({
 	to: ymdField.optional()
 });
 export type JournalEntriesQueryInput = z.infer<typeof journalEntriesQuerySchema>;
+
+// --- M6: onboarding (SPEC 8.6) ----------------------------------------------
+
+// One request finishes the four steps: the name from step 1, the rhythm from
+// step 4 and, when the user accepted the suggestion, the habit from step 3
+// (capture has its own endpoint and is committed from step 2 directly).
+export const onboardingCompleteSchema = z.strictObject({
+	displayName: z.string().trim().min(1).max(30).optional(),
+	journalRhythm: z.enum(['morning', 'evening', 'off']),
+	habit: z
+		.strictObject({
+			title: z.string().trim().min(1).max(80),
+			emoji: z.string().max(8).nullable().optional(),
+			color: colorField.optional(),
+			cadence: z.enum(['week', 'month']),
+			targetCount: z.number().int().min(1).max(10000),
+			maxPerDay: z.number().int().min(1).max(20).optional()
+		})
+		.nullable()
+		.optional()
+});
+export type OnboardingCompleteInput = z.infer<typeof onboardingCompleteSchema>;

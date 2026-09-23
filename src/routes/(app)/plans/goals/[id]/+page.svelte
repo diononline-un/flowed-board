@@ -5,6 +5,7 @@
 	import GoalSheet, { type GoalFormPayload } from '$lib/components/GoalSheet.svelte';
 	import KeyResultRow from '$lib/components/KeyResultRow.svelte';
 	import { pushErrorToast, pushToast } from '$lib/state/toasts.svelte.js';
+	import { applyXp, type XpResponsePayload } from '$lib/state/xp.svelte.js';
 	import { copy } from '$lib/shared/copy.js';
 	import { formatDe } from '$lib/shared/date.js';
 	import { progressOfGoal } from '$lib/shared/progress.js';
@@ -56,12 +57,18 @@
 		formBusy = true;
 		formError = '';
 		try {
-			const result = await api<{ goal: PublicGoal }>(`/api/goals/${goal.id}`, 'PATCH', payload);
+			const result = await api<{ goal: PublicGoal; xp?: XpResponsePayload }>(
+				`/api/goals/${goal.id}`,
+				'PATCH',
+				payload
+			);
 			if (!result) {
 				formError = copy.plans.toast.error;
 				return;
 			}
 			goal = result.goal;
+			// SPEC 5.6: 50 XP for the first time the goal is marked as reached.
+			applyXp(result.xp);
 			editOpen = false;
 			if (result.goal.status === 'done' && data.goal.status !== 'done') {
 				pushToast(copy.plans.toast.goalDone);
@@ -72,14 +79,17 @@
 	}
 
 	async function markAchieved() {
-		const result = await api<{ goal: PublicGoal }>(`/api/goals/${goal.id}`, 'PATCH', {
-			status: 'done'
-		});
+		const result = await api<{ goal: PublicGoal; xp?: XpResponsePayload }>(
+			`/api/goals/${goal.id}`,
+			'PATCH',
+			{ status: 'done' }
+		);
 		if (!result) {
 			pushErrorToast(copy.plans.toast.error);
 			return;
 		}
 		goal = result.goal;
+		applyXp(result.xp);
 		pushToast(copy.plans.toast.goalDone);
 	}
 
@@ -112,7 +122,7 @@
 		keyResults = keyResults.map((entry) =>
 			entry.id === kr.id ? { ...entry, ...patch } : entry
 		);
-		const result = await api<{ keyResult: PublicKeyResult }>(
+		const result = await api<{ keyResult: PublicKeyResult; xp?: XpResponsePayload }>(
 			`/api/goals/${goal.id}/key-results/${kr.id}`,
 			'PATCH',
 			patch
@@ -122,6 +132,9 @@
 			pushErrorToast(copy.plans.toast.error);
 			return;
 		}
+		// SPEC 5.6: `kr_done` once when the target is reached, `halfway` from
+		// 50 % on — both come along with the updated key result.
+		applyXp(result.xp);
 		keyResults = keyResults.map((entry) => (entry.id === kr.id ? result.keyResult : entry));
 	}
 

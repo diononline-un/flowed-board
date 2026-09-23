@@ -9,6 +9,7 @@
 	import PostitCard from '$lib/components/PostitCard.svelte';
 	import PostitSheet, { type PostitFormPayload } from '$lib/components/PostitSheet.svelte';
 	import { pushErrorToast, pushToast } from '$lib/state/toasts.svelte.js';
+	import { applyXp, type XpResponsePayload } from '$lib/state/xp.svelte.js';
 	import { copy } from '$lib/shared/copy.js';
 	import { addDays, diffDays } from '$lib/shared/date.js';
 	import { effectiveHorizon } from '$lib/shared/horizon.js';
@@ -140,14 +141,19 @@
 				? { ...entry, doneAt: makeDone ? new Date().toISOString() : null }
 				: entry
 		);
-		const result = await api<{ postit: PublicPostit }>(`/api/postits/${postit.id}`, 'PATCH', {
-			done: makeDone
-		});
+		const result = await api<{ postit: PublicPostit; xp?: XpResponsePayload }>(
+			`/api/postits/${postit.id}`,
+			'PATCH',
+			{ done: makeDone }
+		);
 		if (!result) {
 			postits = snapshot;
 			pushErrorToast(copy.plans.toast.error);
 			return;
 		}
+		// SPEC 5.6: 5 XP for completing a post-it — once per post-it, so the
+		// undo below does not earn again.
+		applyXp(result.xp);
 		replacePostit(result.postit);
 		if (result.postit.goalId) recalcProgress(result.postit.goalId);
 		if (makeDone) {
@@ -330,11 +336,17 @@
 		formBusy = true;
 		formError = '';
 		try {
-			const result = await api<{ goal: PublicGoal }>('/api/goals', 'POST', payload);
+			const result = await api<{ goal: PublicGoal; xp?: XpResponsePayload }>(
+				'/api/goals',
+				'POST',
+				payload
+			);
 			if (!result) {
 				formError = copy.plans.toast.error;
 				return;
 			}
+			// SPEC 5.6: the first goal unlocks the `goal_setter` badge.
+			applyXp(result.xp);
 			goals = [...goals, { ...result.goal, keyResults: [], progress: 0 }];
 			goalSheetOpen = false;
 		} finally {
@@ -396,16 +408,20 @@
 				ids.includes(postit.id) ? { ...postit, date: addDays(postit.date ?? today, 7) } : postit
 			);
 		}
-		const result = await api<{ items: PublicPostit[] }>('/api/postits/cleanup', 'POST', {
-			ids,
-			action
-		});
+		const result = await api<{ items: PublicPostit[]; xp?: XpResponsePayload }>(
+			'/api/postits/cleanup',
+			'POST',
+			{ ids, action }
+		);
 		cleanupBusy = false;
 		if (!result) {
 			postits = snapshot;
 			pushErrorToast(copy.plans.toast.error);
 			return;
 		}
+		// SPEC 5.6: completing post-its in the sheet earns like any completion,
+		// and running the sheet unlocks `tidy_up`.
+		applyXp(result.xp);
 		const byId = new Map(result.items.map((item) => [item.id, item]));
 		postits = postits.map((postit) => byId.get(postit.id) ?? postit);
 		cleanupOpen = false;

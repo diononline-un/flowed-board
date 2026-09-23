@@ -5,6 +5,7 @@
 	import Tabbar from '$lib/components/Tabbar.svelte';
 	import ToastHost from '$lib/components/ToastHost.svelte';
 	import { captureState, closeCapture, openCapture } from '$lib/state/capture.svelte.js';
+	import { syncXp } from '$lib/state/xp.svelte.js';
 	import { formatDe } from '$lib/shared/date.js';
 	import type { LayoutData } from './$types';
 
@@ -12,6 +13,11 @@
 	// content capped at 1100px and centered. Quick Capture opens via
 	// Cmd/Ctrl+K (SPEC 8.1), the sidebar input or the tab-bar FAB.
 	let { children, data }: { children: Snippet; data: LayoutData } = $props();
+
+	// Keeps the XP chip in the shell in sync with the server value (SPEC 5.6).
+	$effect(() => {
+		syncXp(data.xp.total, data.user.prefs.gamification);
+	});
 
 	$effect(() => {
 		function onKeydown(event: KeyboardEvent) {

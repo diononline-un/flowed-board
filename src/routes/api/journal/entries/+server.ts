@@ -1,7 +1,15 @@
 import type { RequestHandler } from './$types';
-import { conflict, ok, parseJson, unauthorized, validationError } from '$lib/server/http.js';
+import {
+	conflict,
+	ok,
+	parseJson,
+	unauthorized,
+	validationError,
+	withXp
+} from '$lib/server/http.js';
 import * as journalEntriesRepo from '$lib/server/repo/journalEntries.js';
 import * as journalTemplatesRepo from '$lib/server/repo/journalTemplates.js';
+import { awardContextFor, awardJournalEntry } from '$lib/server/xp.js';
 import { copy } from '$lib/shared/copy.js';
 import { todayIn } from '$lib/shared/date.js';
 import { validateJournalValues } from '$lib/shared/journalTemplates.js';
@@ -65,5 +73,16 @@ export const POST: RequestHandler = async (event) => {
 		values: checked.values
 	});
 	if (!result.ok) return conflict(copy.journal.errors.slotTaken);
-	return ok({ entry: result.entry }, 201);
+	// SPEC 5.6 `journal_entry`: 15 XP per (template, day, slot) — the schedule
+	// slot is part of the ref_id, a manual entry uses `none`.
+	const xp = awardJournalEntry(
+		user.id,
+		{
+			templateId: result.entry.templateId,
+			entryDate: result.entry.entryDate,
+			slot: result.entry.slot
+		},
+		awardContextFor(user)
+	);
+	return ok(withXp({ entry: result.entry }, xp), 201);
 };

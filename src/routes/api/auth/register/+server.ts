@@ -16,12 +16,14 @@ import {
 } from '$lib/server/http.js';
 import { registerIpLimiter } from '$lib/server/ratelimit.js';
 import * as usersRepo from '$lib/server/repo/users.js';
+import { seedUserContent } from '$lib/server/seed.js';
 import {
 	SESSION_COOKIE,
 	createSession,
 	sessionCookieOptions
 } from '$lib/server/session.js';
 import { copy } from '$lib/shared/copy.js';
+import { todayIn } from '$lib/shared/date.js';
 import { registerSchema } from '$lib/shared/schemas.js';
 
 // Registration (SPEC 6.1, 7): validates input, enforces the registration
@@ -70,6 +72,11 @@ export const POST: RequestHandler = async (event) => {
 			username: copy.auth.errors.usernameTaken
 		});
 	}
+
+	// SPEC 8.7: a fresh account starts with example content. The onboarding
+	// seeds again when it finishes (idempotent), so skipping it still lands on
+	// a usable board (AC15).
+	seedUserContent(user.id, todayIn(user.tz));
 
 	const { token } = createSession(user.id, event.request.headers.get('user-agent'));
 	event.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());

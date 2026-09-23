@@ -153,6 +153,39 @@ export function getPostit(userId: string, id: string): PostitRow | null {
 	return row ?? null;
 }
 
+// --- M6 aggregates (SPEC 5.6 badge rules, SPEC 7 GET /api/summary) ----------
+
+export function countDonePostits(userId: string): number {
+	const row = getDb()
+		.prepare(
+			'SELECT COUNT(*) AS n FROM postits WHERE user_id = ? AND deleted_at IS NULL AND done_at IS NOT NULL'
+		)
+		.get(userId) as { n: number };
+	return row.n;
+}
+
+// One row per Quick-Capture commit; SPEC 5.6 ties `quick_writer` and the
+// `capture_used` award to a batch, so batches are the unit here, not post-its.
+export function countCaptureBatches(userId: string): number {
+	const row = getDb()
+		.prepare(
+			'SELECT COUNT(DISTINCT batch_id) AS n FROM postits WHERE user_id = ? AND batch_id IS NOT NULL'
+		)
+		.get(userId) as { n: number };
+	return row.n;
+}
+
+export function countDonePostitsInWeek(userId: string, from: string, to: string): number {
+	const row = getDb()
+		.prepare(
+			`SELECT COUNT(*) AS n FROM postits
+			 WHERE user_id = ? AND deleted_at IS NULL AND done_at IS NOT NULL
+			   AND substr(done_at, 1, 10) >= ? AND substr(done_at, 1, 10) <= ?`
+		)
+		.get(userId, from, to) as { n: number };
+	return row.n;
+}
+
 // SPEC 5.3: one log per completed post-it (log_date = date ?? today), capped
 // by max_per_day; reopening removes it again.
 function syncHabitLog(row: PostitRow, today: string): void {

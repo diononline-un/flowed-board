@@ -7,6 +7,7 @@
 	import Modal from '$lib/components/Modal.svelte';
 	import PostitSheet, { type PostitFormPayload } from '$lib/components/PostitSheet.svelte';
 	import { pushErrorToast, pushToast } from '$lib/state/toasts.svelte.js';
+	import { applyXp, type XpResponsePayload } from '$lib/state/xp.svelte.js';
 	import {
 	daysInMonthView,
 	daysInWeekView,
@@ -229,7 +230,7 @@
 		}
 		logDates = { ...logDates, [habit.id]: optimistic };
 		busyHabitId = habit.id;
-		const result = await api<{ habit: PublicHabit; todayCount: number }>(
+		const result = await api<{ habit: PublicHabit; todayCount: number; xp?: XpResponsePayload }>(
 			`/api/habits/${habit.id}/logs`,
 			'POST',
 			{ date: today, delta }
@@ -240,6 +241,9 @@
 			pushErrorToast(copy.calendar.log.error);
 			return;
 		}
+		// SPEC 5.6: 10 XP per habit and day (a second tap on the same day does
+		// not earn again); the toast only appears when gamification is on.
+		applyXp(result.xp);
 		// Reconcile with the server count (a post-it log may already exist).
 		const next = (logDates[habit.id] ?? []).filter((date) => date !== today);
 		for (let i = 0; i < result.todayCount; i += 1) next.push(today);

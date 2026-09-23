@@ -10,6 +10,7 @@
 	import Modal from '$lib/components/Modal.svelte';
 	import Sheet from '$lib/components/Sheet.svelte';
 	import { pushErrorToast, pushToast } from '$lib/state/toasts.svelte.js';
+	import { applyXp, type XpResponsePayload } from '$lib/state/xp.svelte.js';
 	import { copy } from '$lib/shared/copy.js';
 	import { formatDe } from '$lib/shared/date.js';
 	import {
@@ -214,12 +215,16 @@
 			(item) => !(item.template.id === target.template.id && item.slot === payload.slot)
 		);
 
-		const result = await api<{ entry: PublicJournalEntry }>('/api/journal/entries', 'POST', {
-			templateId: target.template.id,
-			entryDate: payload.entryDate,
-			slot: payload.slot,
-			values: payload.values
-		});
+		const result = await api<{ entry: PublicJournalEntry; xp?: XpResponsePayload }>(
+			'/api/journal/entries',
+			'POST',
+			{
+				templateId: target.template.id,
+				entryDate: payload.entryDate,
+				slot: payload.slot,
+				values: payload.values
+			}
+		);
 		entryBusy = false;
 		if (!result.ok) {
 			entries = entrySnapshot;
@@ -227,6 +232,9 @@
 			entryError = result.error;
 			return;
 		}
+		// SPEC 5.6: 15 XP per entry, plus the journal_starter/journal_regular
+		// badges at three and fifteen entries.
+		applyXp(result.data.xp);
 		entries = sortEntries(
 			entries.map((entry) => (entry.id === optimistic.id ? result.data.entry : entry))
 		);

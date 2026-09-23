@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { addDays } from './date.js';
 import {
 	completedPeriods,
+	completedWeekStarts,
 	countInWindow,
 	habitProgress,
 	habitWindow,
@@ -216,6 +217,35 @@ describe('habitProgress', () => {
 		// The week 09-07..09-13 is over and met the target → one completed week.
 		const progress = habitProgress(habit, ['2026-09-07'], TODAY, 1);
 		expect(progress.periods.completed).toBe(1);
+	});
+
+	it('lists the weeks in which the target was reached (SPEC 5.6 keeper)', () => {
+		const habit = {
+			cadence: 'week' as const,
+			target_count: 2,
+			range_start: null,
+			range_end: null,
+			created_at: '2026-08-31T09:00:00.000Z'
+		};
+		// 08-31..09-06 met (2 logs), 09-07..09-13 missed (1 log),
+		// 09-14..09-20 met (2 logs); the running week is never counted.
+		const starts = completedWeekStarts(
+			habit,
+			['2026-08-31', '2026-09-02', '2026-09-08', '2026-09-15', '2026-09-16', '2026-09-21'],
+			TODAY,
+			1
+		);
+		expect(starts).toEqual(['2026-08-31', '2026-09-14']);
+		// Same habit with week_start = Sunday: the week is reported by its own
+		// start (Sunday 08-30), and the window clipped at created_at still
+		// holds both logs of that week.
+		expect(
+			completedWeekStarts(habit, ['2026-08-31', '2026-09-03', '2026-09-14'], TODAY, 0)
+		).toEqual(['2026-08-30']);
+		// nothing finished yet -> no week
+		expect(
+			completedWeekStarts({ ...habit, created_at: TODAY }, ['2026-09-21'], TODAY, 1)
+		).toEqual([]);
 	});
 
 	it('exposes pace only for range habits', () => {		const progress = habitProgress(

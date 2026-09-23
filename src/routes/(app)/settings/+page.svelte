@@ -1,13 +1,25 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
+	import BadgeGrid from '$lib/components/BadgeGrid.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import RecoveryScreen from '$lib/components/RecoveryScreen.svelte';
+	import XpBar from '$lib/components/XpBar.svelte';
 	import { copy } from '$lib/shared/copy.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 	const user = $derived(data.user);
 	const accountCopy = copy.settings.account;
+	const gamingCopy = copy.gamification;
+
+	// Badge grid input: id -> earnedAt for the badges the user owns.
+	const earnedBadges = $derived(
+		Object.fromEntries(
+			data.badges
+				.filter((entry) => entry.earnedAt !== null)
+				.map((entry) => [entry.id, entry.earnedAt as string])
+		)
+	);
 
 	// Profile section.
 	let displayName = $state(data.user.displayName);
@@ -93,6 +105,37 @@
 			aiError = copy.errors.generic;
 		} finally {
 			aiBusy = false;
+		}
+	}
+
+	// Gamification (SPEC 5.6, P7): XP are always recorded, this only controls
+	// whether the UI shows them. Turning it off hides the bar, the level chip
+	// and the toasts — nothing is deleted and no XP are lost.
+	let gamification = $state(data.user.prefs.gamification);
+	let gamingBusy = $state(false);
+	let gamingSaved = $state(false);
+	let gamingError = $state('');
+
+	async function saveGamification() {
+		gamingBusy = true;
+		gamingSaved = false;
+		gamingError = '';
+		try {
+			const response = await fetch('/api/account', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ prefs: { gamification } })
+			});
+			if (response.ok) {
+				gamingSaved = true;
+				await invalidateAll();
+				return;
+			}
+			gamingError = copy.errors.generic;
+		} catch {
+			gamingError = copy.errors.generic;
+		} finally {
+			gamingBusy = false;
 		}
 	}
 
@@ -385,6 +428,43 @@
 		{/if}
 		{#if aiError}
 			<p class="mt-2 text-sm font-semibold text-ink" role="alert">{aiError}</p>
+		{/if}
+	</section>
+
+	<section
+		class="rounded-card border border-paper-dark bg-paper p-6 shadow-postit"
+		aria-labelledby="gamification-heading"
+	>
+		<h2 id="gamification-heading" class="text-xl font-bold text-ink">
+			{gamingCopy.settingsTitle}
+		</h2>
+		<p class="mt-1 max-w-xl text-sm text-ink-soft">{gamingCopy.settingsHint}</p>
+		<label class="mt-4 flex items-center gap-2 text-sm font-semibold text-ink">
+			<input
+				type="checkbox"
+				class="h-4 w-4 accent-ink"
+				bind:checked={gamification}
+				onchange={saveGamification}
+				disabled={gamingBusy}
+			/>
+			{gamingCopy.settingsToggle}
+		</label>
+		{#if gamingSaved}
+			<p class="mt-2 text-sm font-semibold text-ink" role="status">
+				{accountCopy.saved}
+			</p>
+		{/if}
+		{#if gamingError}
+			<p class="mt-2 text-sm font-semibold text-ink" role="alert">{gamingError}</p>
+		{/if}
+
+		{#if gamification}
+			<div class="mt-5 max-w-md">
+				<XpBar total={data.xp.total} />
+			</div>
+			<h3 class="mt-6 text-lg font-bold text-ink">{gamingCopy.badgesTitle}</h3>
+			<p class="mb-3 text-sm text-ink-soft">{gamingCopy.badgesHint}</p>
+			<BadgeGrid earned={earnedBadges} />
 		{/if}
 	</section>
 

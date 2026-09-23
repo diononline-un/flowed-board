@@ -94,6 +94,27 @@ export function periodWindows(
 	return windows;
 }
 
+// Start dates of the finished weeks in which the target was reached. Same rule
+// as `completedPeriods`, but the caller also gets *which* weeks — the SPEC-5.6
+// `keeper` badge counts four different weeks, not four times the same one.
+export function completedWeekStarts(
+	habit: HabitPlan & { target_count: number },
+	logDates: readonly string[],
+	today: string,
+	weekStartDay: WeekStartDay
+): string[] {
+	const start = habit.created_at.slice(0, 10);
+	const lastEnd = addDays(weekStart(today, weekStartDay), -1);
+	if (start > lastEnd) return [];
+	const starts: string[] = [];
+	for (const window of periodWindows('week', start, lastEnd, weekStartDay)) {
+		if (countInWindow(logDates, window) >= habit.target_count) {
+			starts.push(weekStart(window.from, weekStartDay));
+		}
+	}
+	return [...new Set(starts)];
+}
+
 export interface CompletedPeriods {
 	// Windows that are over and in which count >= target. Never decreases
 	// (P3) because a finished window cannot change any more.

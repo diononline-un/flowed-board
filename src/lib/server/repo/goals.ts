@@ -97,6 +97,43 @@ export function getGoal(userId: string, id: string): GoalRow | null {
 	return row ?? null;
 }
 
+// --- M6 aggregates (SPEC 5.6 badge rules) -----------------------------------
+
+// Counts non-deleted goals, optionally restricted to one status.
+export function countGoals(userId: string, status?: 'active' | 'done' | 'archived'): number {
+	if (status) {
+		const row = getDb()
+			.prepare(
+				'SELECT COUNT(*) AS n FROM goals WHERE user_id = ? AND deleted_at IS NULL AND status = ?'
+			)
+			.get(userId, status) as { n: number };
+		return row.n;
+	}
+	const row = getDb()
+		.prepare('SELECT COUNT(*) AS n FROM goals WHERE user_id = ? AND deleted_at IS NULL')
+		.get(userId) as { n: number };
+	return row.n;
+}
+
+// Non-deleted key results of all goals of one user — the `halfway` badge needs
+// them without going through a single goal.
+export function listActiveKeyResults(userId: string): {
+	kind: 'number' | 'check';
+	targetValue: number;
+	currentValue: number;
+}[] {
+	const rows = getDb()
+		.prepare(
+			'SELECT kind, target_value, current_value FROM key_results WHERE user_id = ? AND deleted_at IS NULL'
+		)
+		.all(userId) as { kind: 'number' | 'check'; target_value: number; current_value: number }[];
+	return rows.map((row) => ({
+		kind: row.kind,
+		targetValue: row.target_value,
+		currentValue: row.current_value
+	}));
+}
+
 // Exact title match, case-insensitive (capture commit, SPEC 7): assigns a
 // suggested goal only when the user already owns one with that title.
 export function findByTitle(userId: string, title: string): GoalRow | null {

@@ -107,7 +107,9 @@
 				<span>{bestLabel}</span>
 			</p>
 			{#if paceText}
-				<p class="mt-1 text-xs font-bold {tone === 'sage' ? 'text-sage' : 'text-ink-soft'}">
+				<!-- SPEC 11: the tone lives in the left border, never in the text
+				     colour — sage on paper would be 1.82:1. -->
+				<p class="mt-1 text-xs font-bold text-ink">
 					{paceText}
 				</p>
 			{/if}

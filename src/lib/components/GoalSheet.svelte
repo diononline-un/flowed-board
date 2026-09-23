@@ -82,6 +82,7 @@
 				maxlength="140"
 				required
 				placeholder={formCopy.goalTitlePlaceholder}
+				aria-describedby={error ? 'goal-form-error' : undefined}
 			/>
 		</label>
 		<label class="flex flex-col gap-1">
@@ -150,7 +151,7 @@
 			</fieldset>
 		{/if}
 		{#if error}
-			<p class="text-sm font-semibold text-ink" role="alert">{error}</p>
+			<p id="goal-form-error" class="text-sm font-semibold text-ink" role="alert">{error}</p>
 		{/if}
 		<div class="mt-2 flex justify-end gap-2">
 			<button

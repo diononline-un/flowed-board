@@ -33,7 +33,9 @@ body {
 	outline-offset: 2px;
 }
 
-/* Reduced motion kills every non-functional transition (SPEC 11). */
+/* Reduced motion kills every non-functional transition (SPEC 11) — once by
+   system preference and once by the in-app prefs.reduceMotion switch, which
+   puts .reduce-motion on the app shell wrapper. Both paths share one rule. */
 @media (prefers-reduced-motion: reduce) {
 	*,
 	*::before,
@@ -42,4 +44,14 @@ body {
 		animation-duration: 0.01ms !important;
 		animation-iteration-count: 1 !important;
 	}
+}
+
+.reduce-motion,
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+	transition-duration: 0.01ms !important;
+	animation-duration: 0.01ms !important;
+	animation-iteration-count: 1 !important;
+	scroll-behavior: auto !important;
 }

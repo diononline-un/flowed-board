@@ -234,3 +234,13 @@ export function restoreHabit(userId: string, id: string): PublicHabit | null {
 	const updated = getHabitRow(userId, id);
 	return updated ? toPublicHabit(updated) : null;
 }
+
+// SPEC 6.8 purge: hard-deletes every soft-deleted habit older than the
+// retention cutoff; its logs cascade (habit_logs.habit_id), while post-its
+// that pointed at it keep existing with habit_id = NULL.
+export function purgeDeleted(olderThanIso: string): number {
+	const result = getDb()
+		.prepare('DELETE FROM habits WHERE deleted_at IS NOT NULL AND deleted_at < ?')
+		.run(olderThanIso);
+	return result.changes;
+}

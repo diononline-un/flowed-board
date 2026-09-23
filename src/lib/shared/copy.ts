@@ -24,6 +24,9 @@ export const copy = {
 		newPostit: 'Neues Post-it',
 		goalProgress: (percent: number) => `${percent} % geschafft`,
 		overdueChip: 'verschoben?',
+		// SPEC 11: the stripe colour never carries meaning alone — the goal
+		// name travels with it as tooltip and as accessible text.
+		goalTooltip: (title: string) => `Ziel: ${title}`,
 		doneSection: (count: number) => `Erledigt (${count})`,
 		showDone: 'Erledigte anzeigen',
 		hideDone: 'Erledigte ausblenden',
@@ -147,6 +150,12 @@ export const copy = {
 		habitsTitle: 'Habits',
 		habitsEmpty: 'Noch keine Habits — leg dein erstes an.',
 		habitsArchived: 'Archivierte Habits',
+		archivedEmpty: 'Nichts archiviert.',
+		archivedHint:
+			'Archivierte Habits zählen nicht mehr in die Fortschritte, ihre Einträge bleiben erhalten.',
+		restoreHabit: 'Wieder aktivieren',
+		showArchived: 'Archivierte anzeigen',
+		hideArchived: 'Archivierte ausblenden',
 		newHabit: 'Neues Habit',
 		editHabit: 'Habit bearbeiten',
 		openMenu: 'Aktionen',
@@ -185,7 +194,8 @@ export const copy = {
 				future: 'Dieses Datum liegt in der Zukunft.',
 				tooOld: 'Das liegt mehr als 60 Tage zurück.',
 				outsideRange: 'Dieser Tag liegt außerhalb des Zeitraums.',
-				maxPerDay: 'Maximum für heute erreicht',
+				// Neutral wording: the same error appears for backdated days.
+				maxPerDay: 'Für diesen Tag ist das Maximum erreicht',
 				noLog: 'Für diesen Tag gibt es nichts zurückzunehmen.'
 			}
 		},
@@ -209,7 +219,9 @@ export const copy = {
 			save: 'Speichern',
 			create: 'Anlegen',
 			cancel: 'Abbrechen',
-			deleteHint: 'Löschen entfernt das Habit samt seiner Einträge.'
+			// DELETE soft-deletes the habit: it is restorable right afterwards.
+			deleteHint:
+				'Löschen legt das Habit in den Papierkorb — du kannst es danach noch zurückholen. Die Einträge bleiben erhalten.'
 		},
 		errors: {
 			rangeRequired: 'Für einen festen Zeitraum brauchst du Start und Ende.',
@@ -228,7 +240,6 @@ export const copy = {
 	capture: {
 		fabLabel: 'Schnell erfassen',
 		sidebarPlaceholder: 'Was steht an? (Enter für Quick Capture)',
-		sidebarSubmit: 'Erfassen',
 		title: 'Quick Capture',
 		inputLabel: 'Was steht an?',
 		inputPlaceholder: 'z. B. Montag Sport, Dienstag und Mittwoch lernen',
@@ -261,7 +272,15 @@ export const copy = {
 		settingsHint:
 			'Wenn aktiv, wird dein Capture-Text zur Erkennung an den KI-Anbieter gesendet. Aus bedeutet: jeder Text wird unverändert als Post-it gespeichert. Journal-Einträge sind davon nie betroffen.',
 		settingsToggle: 'KI-Erkennung aktiv',
-		settingsSaved: 'Gespeichert.'
+		settingsSaved: 'Gespeichert.',
+		// What leaves the server and what never does (SPEC 9.5) — spelled out
+		// in settings so the consent stays informed.
+		settingsDataTitle: 'Was geht an die KI?',
+		settingsDataSends: 'An den KI-Anbieter geht nur der Text, den du gerade in Quick Capture tippst.',
+		settingsDataNever:
+			'Journal-Einträge, Ziele, Habits und deine Notizen verlassen den Server nie. Sie werden der KI nicht gezeigt und nicht mitgeschickt.',
+		settingsConsentAt: (date: string) => `Einwilligung erteilt am ${date}.`,
+		settingsConsentMissing: 'Du hast noch keine Einwilligung erteilt.'
 	},
 	onboarding: {
 		title: 'Willkommen bei FlowBoard',
@@ -468,6 +487,24 @@ export const copy = {
 		title: 'Settings',
 		emptyTitle: 'Noch nichts einzustellen',
 		emptyHint: 'Sobald dein Konto steht, findest du hier deine Optionen.',
+		// SPEC 4.4 prefs: appearance and behaviour.
+		appearance: {
+			title: 'Darstellung',
+			hint: 'Alles hier ist Geschmackssache — du kannst es jederzeit wieder umstellen.',
+			postitTilt: 'Post-its leicht schräg',
+			postitTiltHint: 'Standardmäßig stehen deine Post-its gerade.',
+			reduceMotion: 'Bewegung reduzieren',
+			reduceMotionHint:
+				'Animationen und Übergänge werden abgeschaltet. Deine Systemeinstellung wird zusätzlich immer beachtet.',
+			showDoneDays: 'Erledigte anzeigen',
+			showDoneDaysHint: 'Wie lange erledigte Post-its auf dem Board sichtbar bleiben.',
+			showDoneDaysOptions: {
+				1: '1 Tag',
+				3: '3 Tage',
+				7: '7 Tage',
+				14: '14 Tage'
+			}
+		},
 		account: {
 			profileTitle: 'Profil',
 			displayName: 'Anzeigename',
@@ -550,6 +587,8 @@ export const copy = {
 			recoverFailed: 'Angaben stimmen nicht.',
 			rateLimited: 'Zu viele Versuche — bitte warte einen Moment.',
 			registrationClosed: 'Die Registrierung ist gerade geschlossen.',
+			registerClosedHint:
+				'Hier kommt gerade niemand neu rein. Wenn du schon ein Konto hast, melde dich einfach an.',
 			usernameTaken: 'Dieser Benutzername ist schon vergeben.',
 			inviteInvalid: 'Dieser Einladungscode stimmt nicht.',
 			usernameInvalid:

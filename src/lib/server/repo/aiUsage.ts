@@ -24,3 +24,10 @@ export function consume(userId: string, day: string, limit: number): boolean {
 		.run(userId, day);
 	return true;
 }
+
+// SPEC 6.8 purge: drops the daily LLM counters once they are older than the
+// retention window; they exist only for the per-day cap (SPEC 9.3).
+export function purgeOlderThan(day: string): number {
+	const result = getDb().prepare('DELETE FROM ai_usage WHERE day < ?').run(day);
+	return result.changes;
+}

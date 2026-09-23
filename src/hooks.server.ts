@@ -1,6 +1,7 @@
 import { json, redirect, type Handle } from '@sveltejs/kit';
 import { getDb } from '$lib/server/db.js';
 import { env } from '$lib/server/env.js';
+import { purgeJobAllowed, startPurgeJob } from '$lib/server/purge.js';
 import * as usersRepo from '$lib/server/repo/users.js';
 import {
 	SESSION_COOKIE,
@@ -11,6 +12,12 @@ import { copy } from '$lib/shared/copy.js';
 
 // Server start: open the database and run pending migrations (SPEC 3).
 getDb();
+
+// SPEC 6.8: purge at server start and then every 6 h. Only a real server run
+// starts the timer — unit tests and any VITEST process skip it.
+if (purgeJobAllowed()) {
+	startPurgeJob();
+}
 
 // Auth endpoints that must stay reachable without a session.
 const PUBLIC_API_PATHS = new Set([

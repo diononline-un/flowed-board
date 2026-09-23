@@ -38,6 +38,12 @@
 
 	type Phase = 'consent' | 'input' | 'loading' | 'preview';
 
+	// SPEC 8.1: the server aborts its own LLM call after 8 s. The client waits
+	// one second longer before it gives up too, so a hanging connection can
+	// never leave the user staring at the spinner forever — it lands in the
+	// SPEC-9.4 fallback preview instead.
+	const PARSE_TIMEOUT_MS = 9000;
+
 	// Local copies of the consent flags so a decision made here applies
 	// immediately; the PATCH response resyncs the layout data afterwards.
 	let aiEnabled = $state(prefs.aiEnabled);
@@ -76,11 +82,12 @@
 		};
 	}
 
-	async function post(path: string, body: unknown): Promise<Response> {
+	async function post(path: string, body: unknown, signal?: AbortSignal): Promise<Response> {
 		return fetch(path, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(body)
+			body: JSON.stringify(body),
+			signal
 		});
 	}
 
@@ -121,14 +128,22 @@
 		}
 		phase = 'loading';
 		let response: Response;
+		// Client-side cap (SPEC 8.1): 9 s, one second above the server's own
+		// 8 s abort. Either way the user ends up in the fallback preview
+		// instead of a spinner that never stops.
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), PARSE_TIMEOUT_MS);
 		try {
-			response = await post('/api/capture/parse', { text: value });
+			response = await post('/api/capture/parse', { text: value }, controller.signal);
 		} catch {
-			// Network failure: still land in the preview with the fallback row.
+			// Network failure or timeout: still land in the preview with the
+			// fallback row (SPEC 9.4).
 			items = [fallbackItem(value)];
 			fallbackUsed = true;
 			phase = 'preview';
 			return;
+		} finally {
+			clearTimeout(timeout);
 		}
 		if (response.status === 429) {
 			const body = (await response.json().catch(() => null)) as { error?: string } | null;

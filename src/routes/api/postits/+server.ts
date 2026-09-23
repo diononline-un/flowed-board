@@ -29,15 +29,16 @@ export const GET: RequestHandler = (event) => {
 	});
 };
 
-// POST: create. A goalId/habitId pointing at another user's row is a 422
-// validation error (SPEC M2 brief), never a 403 (SPEC 6.6).
+// POST: create. A goalId/habitId pointing at another user's row — or at a
+// soft-deleted own row — is a 422 validation error (SPEC M2 brief), never a
+// 403 (SPEC 6.6).
 export const POST: RequestHandler = async (event) => {
 	const user = event.locals.user;
 	if (!user) return unauthorized();
 	const parsed = await parseJson(postitCreateSchema, event.request);
 	if (!parsed.ok) return parsed.response;
 	const fields: Record<string, string> = {};
-	if (parsed.data.goalId && !goalsRepo.getGoal(user.id, parsed.data.goalId)) {
+	if (parsed.data.goalId && !goalsRepo.getLiveGoal(user.id, parsed.data.goalId)) {
 		fields.goalId = copy.plans.errors.foreignRef;
 	}
 	if (parsed.data.habitId && !habitsRepo.getHabit(user.id, parsed.data.habitId)) {

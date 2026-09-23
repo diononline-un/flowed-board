@@ -177,6 +177,64 @@ describe('habitLogs repo', () => {
 		expect(habitLogsRepo.countForDay(user.id, habit.id, TODAY)).toBe(0);
 	});
 
+	// M7 polish (review finding M4): the post-it path enforces the same range
+	// window as the tap path — a post-it dated outside it never widens the log.
+	it('refuses a post-it log outside the window of a range habit', () => {
+		db = useTestDb();
+		const user = makeUser('hl-range-postit');
+		const habit = makeHabit(user.id, {
+			cadence: 'range',
+			rangeStart: '2026-09-01',
+			rangeEnd: '2026-09-30'
+		});
+
+		const inside = postitsRepo.createPostit(user.id, {
+			title: 'innen',
+			date: '2026-09-15',
+			habitId: habit.id
+		});
+		const before = postitsRepo.createPostit(user.id, {
+			title: 'davor',
+			date: '2026-08-31',
+			habitId: habit.id
+		});
+		const after = postitsRepo.createPostit(user.id, {
+			title: 'danach',
+			date: '2026-10-01',
+			habitId: habit.id
+		});
+
+		// Inside the window: the log is written.
+		expect(habitLogsRepo.addPostitLog(user.id, habit.id, '2026-09-15', inside.id)).not.toBeNull();
+		expect(habitLogsRepo.countForDay(user.id, habit.id, '2026-09-15')).toBe(1);
+
+		// Before and after the window: nothing is written.
+		expect(habitLogsRepo.addPostitLog(user.id, habit.id, '2026-08-31', before.id)).toBeNull();
+		expect(habitLogsRepo.addPostitLog(user.id, habit.id, '2026-10-01', after.id)).toBeNull();
+		expect(habitLogsRepo.listByPostit(user.id, before.id)).toHaveLength(0);
+		expect(habitLogsRepo.listByPostit(user.id, after.id)).toHaveLength(0);
+
+		// The same through the post-it side effect: completing a post-it dated
+		// outside the window leaves the counter untouched.
+		postitsRepo.updatePostit(user.id, after.id, { done: true }, TODAY);
+		expect(habitLogsRepo.listByPostit(user.id, after.id)).toHaveLength(0);
+		expect(habitLogsRepo.countForDay(user.id, habit.id, '2026-10-01')).toBe(0);
+		expect(habitLogsRepo.countForDay(user.id, habit.id, '2026-09-15')).toBe(1);
+	});
+
+	it('still writes logs for week and month habits on any allowed day', () => {
+		db = useTestDb();
+		const user = makeUser('hl-week-any');
+		const habit = makeHabit(user.id, { cadence: 'week' });
+		const postit = postitsRepo.createPostit(user.id, {
+			title: 'alt',
+			date: '2026-08-10',
+			habitId: habit.id
+		});
+		expect(habitLogsRepo.addPostitLog(user.id, habit.id, '2026-08-10', postit.id)).not.toBeNull();
+		expect(habitLogsRepo.countForDay(user.id, habit.id, '2026-08-10')).toBe(1);
+	});
+
 	it('keeps users apart: B cannot log, read or delete A logs', () => {
 		db = useTestDb();
 		const userA = makeUser('hl-user-a');

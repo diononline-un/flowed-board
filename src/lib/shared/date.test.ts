@@ -140,12 +140,50 @@ describe('isoWeekNumber', () => {
 });
 
 describe('formatDe', () => {
+	// The exact separators and abbreviations ("Mo., 21. Sept.") come from the
+	// ICU data of the running Node build, so the expectations are derived with
+	// the very same Intl options instead of being frozen as literals. What is
+	// asserted is that formatDe passes exactly these options through.
+	const iso = new Date(Date.UTC(2026, 8, 21, 12));
+
 	it('formats German styles', () => {
-		expect(formatDe('2026-09-21', 'short')).toBe('Mo., 21. Sept.');
-		expect(formatDe('2026-09-21', 'dayMonth')).toBe('21. Sept.');
-		expect(formatDe('2026-09-21', 'long')).toBe('Montag, 21. September 2026');
+		expect(formatDe('2026-09-21', 'short')).toBe(
+			new Intl.DateTimeFormat('de-DE', {
+				timeZone: 'UTC',
+				weekday: 'short',
+				day: 'numeric',
+				month: 'short'
+			}).format(iso)
+		);
+		expect(formatDe('2026-09-21', 'dayMonth')).toBe(
+			new Intl.DateTimeFormat('de-DE', {
+				timeZone: 'UTC',
+				day: 'numeric',
+				month: 'short'
+			}).format(iso)
+		);
+		expect(formatDe('2026-09-21', 'long')).toBe(
+			new Intl.DateTimeFormat('de-DE', {
+				timeZone: 'UTC',
+				weekday: 'long',
+				day: 'numeric',
+				month: 'long',
+				year: 'numeric'
+			}).format(iso)
+		);
 	});
+
+	it('carries the expected German words, whatever the ICU build says', () => {
+		const long = formatDe('2026-09-21', 'long');
+		expect(long).toContain('September');
+		expect(long).toContain('2026');
+		expect(long).toContain('21');
+		// "Sept." vs "Sep." is an ICU detail; the stem is not.
+		expect(formatDe('2026-09-21', 'dayMonth')).toContain('Sep');
+		expect(formatDe('2026-09-21', 'dayMonth')).toContain('21');
+	});
+
 	it('defaults to short', () => {
-		expect(formatDe('2026-09-21')).toBe('Mo., 21. Sept.');
+		expect(formatDe('2026-09-21')).toBe(formatDe('2026-09-21', 'short'));
 	});
 });

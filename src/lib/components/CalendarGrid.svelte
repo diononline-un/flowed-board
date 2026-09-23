@@ -93,7 +93,7 @@
 							<button
 								type="button"
 								class="w-full rounded-lg border border-paper-dark/70 bg-paper-dark/40 px-1.5 py-1 text-left text-[0.7rem] leading-snug font-semibold text-ink transition-colors duration-fast hover:bg-paper-dark {postit.doneAt
-									? 'line-through opacity-60'
+									? 'line-through opacity-80'
 									: ''}"
 								onclick={() => oneditpostit(postit)}
 							>

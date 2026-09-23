@@ -75,6 +75,10 @@ export function listLogDates(
 // (source='postit', log_date given by the caller as date ?? today), unless
 // max_per_day for that day is already reached — then nothing happens.
 // Idempotent: an existing post-it log for the same post-it is returned as-is.
+//
+// A `range` habit only accepts days inside its own window (the same rule the
+// tap path enforces, SPEC 5.5): a post-it dated outside `[range_start,
+// range_end]` completes without writing a log, it never widens the window.
 export function addPostitLog(
 	userId: string,
 	habitId: string,
@@ -84,9 +88,32 @@ export function addPostitLog(
 	const existing = listByPostit(userId, postitId);
 	if (existing.length > 0) return existing[0]!;
 	const habit = getDb()
-		.prepare('SELECT max_per_day FROM habits WHERE id = ? AND user_id = ? AND deleted_at IS NULL')
-		.get(habitId, userId) as { max_per_day: number } | undefined;
+		.prepare(
+			'SELECT max_per_day, cadence, range_start, range_end FROM habits WHERE id = ? AND user_id = ? AND deleted_at IS NULL'
+		)
+		.get(habitId, userId) as
+		| {
+				max_per_day: number;
+				cadence: 'week' | 'month' | 'range';
+				range_start: string | null;
+				range_end: string | null;
+			}
+		| undefined;
 	if (!habit) return null;
+	if (habit.cadence === 'range') {
+		// The range window is independent of the week start (SPEC 5.5).
+		const window = habitWindow(
+			{
+				cadence: 'range',
+				created_at: logDate,
+				range_start: habit.range_start,
+				range_end: habit.range_end
+			},
+			logDate,
+			1
+		);
+		if (logDate < window.from || logDate > window.to) return null;
+	}
 	if (countForDay(userId, habitId, logDate) >= habit.max_per_day) return null;
 	const row: HabitLogRow = {
 		id: randomUUID(),

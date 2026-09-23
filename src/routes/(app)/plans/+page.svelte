@@ -73,8 +73,10 @@
 	}
 
 	// Mutable lane arrays for svelte-dnd-action; resynced from the single
-	// source of truth (postits) whenever it changes outside a drag.
-	let laneItems = $state<Record<Horizon, PublicPostit[]>>({ short: [], mid: [], long: [] });
+	// source of truth (postits) whenever it changes outside a drag. The initial
+	// value is computed eagerly so the server render already carries the board:
+	// lanes that only fill in after hydration leave an empty first paint.
+	let laneItems = $state<Record<Horizon, PublicPostit[]>>(computeOpenLanes());
 	$effect(() => {
 		laneItems = computeOpenLanes();
 	});

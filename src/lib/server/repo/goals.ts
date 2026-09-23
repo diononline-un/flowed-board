@@ -97,6 +97,15 @@ export function getGoal(userId: string, id: string): GoalRow | null {
 	return row ?? null;
 }
 
+// Live goal (not soft-deleted), used by every ownership check of an incoming
+// foreign key: a soft-deleted goal is gone for the user, so linking to it must
+// fail exactly like a foreign id (SPEC 6.6, mirrors getHabit).
+export function getLiveGoal(userId: string, id: string): GoalRow | null {
+	const row = getGoal(userId, id);
+	if (!row || row.deleted_at !== null) return null;
+	return row;
+}
+
 // --- M6 aggregates (SPEC 5.6 badge rules) -----------------------------------
 
 // Counts non-deleted goals, optionally restricted to one status.
@@ -218,4 +227,13 @@ export function restoreGoal(userId: string, id: string): PublicGoal | null {
 		.run(now, id, userId);
 	const updated = getGoal(userId, id);
 	return updated ? toPublicGoal(updated) : null;
+}
+
+// SPEC 6.8 purge: hard-deletes every soft-deleted goal older than the
+// retention cutoff; its key results cascade (key_results.goal_id).
+export function purgeDeleted(olderThanIso: string): number {
+	const result = getDb()
+		.prepare('DELETE FROM goals WHERE deleted_at IS NOT NULL AND deleted_at < ?')
+		.run(olderThanIso);
+	return result.changes;
 }

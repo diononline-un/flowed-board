@@ -82,7 +82,7 @@
 					autocapitalize="none"
 					spellcheck="false"
 					required
-					aria-describedby="recover-phrase-hint"
+					aria-describedby="recover-phrase-hint{error ? ' recover-error' : ''}"
 				></textarea>
 				<span id="recover-phrase-hint" class="text-xs text-ink-soft">
 					{copy.auth.phraseHint}
@@ -114,7 +114,7 @@
 			</label>
 
 			{#if error}
-				<p class="text-sm font-semibold text-ink" role="alert">{error}</p>
+				<p id="recover-error" class="text-sm font-semibold text-ink" role="alert">{error}</p>
 			{/if}
 
 			<button

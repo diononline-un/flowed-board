@@ -12,13 +12,14 @@ export const PATCH: RequestHandler = async (event) => {
 	if (!user) return unauthorized();
 	const parsed = await parseJson(habitPatchSchema, event.request);
 	if (!parsed.ok) return parsed.response;
-	if (parsed.data.goalId !== undefined && parsed.data.goalId !== null) {
-		const goal = goalsRepo.getGoal(user.id, parsed.data.goalId);
-		if (!goal || goal.deleted_at !== null) {
-			return validationError(copy.errors.invalidInput, {
-				goalId: copy.plans.errors.foreignRef
-			});
-		}
+	if (
+		parsed.data.goalId !== undefined &&
+		parsed.data.goalId !== null &&
+		!goalsRepo.getLiveGoal(user.id, parsed.data.goalId)
+	) {
+		return validationError(copy.errors.invalidInput, {
+			goalId: copy.plans.errors.foreignRef
+		});
 	}
 	const habit = habitsRepo.updateHabit(user.id, event.params.id, parsed.data);
 	if (!habit) return notFound();

@@ -6,6 +6,10 @@
 
 	let { data }: { data: PageData } = $props();
 
+	// SPEC 6.1: with REGISTRATION=closed the server rejects every registration.
+	// The form is locked here instead of letting people fill it out and fail.
+	const closed = $derived(data.registrationMode === 'closed');
+
 	let username = $state('');
 	let password = $state('');
 	let inviteCode = $state('');
@@ -16,6 +20,7 @@
 	let recoveryPhrase = $state('');
 
 	async function submit() {
+		if (closed) return;
 		busy = true;
 		error = '';
 		fieldErrors = {};
@@ -58,6 +63,17 @@
 		<h1 class="text-2xl font-bold text-ink">{copy.auth.registerTitle}</h1>
 		<p class="mt-1 text-sm text-ink-soft">{copy.auth.registerSubtitle}</p>
 
+		{#if closed}
+			<p
+				class="mt-6 rounded-card border border-sand bg-sand/30 px-4 py-3 text-sm font-semibold text-ink"
+				role="status"
+			>
+				{copy.auth.errors.registrationClosed} {copy.auth.errors.registerClosedHint}
+			</p>
+		{/if}
+
+		<!-- `disabled` on the fieldset locks every control at once; the form
+		     stays readable instead of disappearing. -->
 		<form
 			class="mt-6 flex flex-col gap-4"
 			onsubmit={(event) => {
@@ -65,6 +81,12 @@
 				submit();
 			}}
 		>
+			<fieldset class="flex flex-col gap-4" disabled={closed} aria-describedby={closed ? 'register-closed' : undefined}>
+				{#if closed}
+					<p id="register-closed" class="sr-only">
+						{copy.auth.errors.registrationClosed}
+					</p>
+				{/if}
 			<label class="flex flex-col gap-1">
 				<span class="text-sm font-semibold text-ink">{copy.auth.username}</span>
 				<input
@@ -143,10 +165,11 @@
 			<button
 				type="submit"
 				class="mt-2 rounded-pill bg-butter px-5 py-2.5 text-sm font-bold text-ink shadow-postit transition-transform duration-fast hover:scale-[1.02] disabled:opacity-50"
-				disabled={busy || !ageConfirmed}
+				disabled={closed || busy || !ageConfirmed}
 			>
 				{copy.auth.registerSubmit}
 			</button>
+			</fieldset>
 		</form>
 
 		<p class="mt-5 text-sm text-ink-soft">

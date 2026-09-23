@@ -28,7 +28,7 @@ export const PATCH: RequestHandler = async (event) => {
 	if (
 		parsed.data.goalId !== undefined &&
 		parsed.data.goalId !== null &&
-		!goalsRepo.getGoal(user.id, parsed.data.goalId)
+		!goalsRepo.getLiveGoal(user.id, parsed.data.goalId)
 	) {
 		fields.goalId = copy.plans.errors.foreignRef;
 	}

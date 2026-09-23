@@ -56,6 +56,7 @@
 				autocomplete="username"
 				autocapitalize="none"
 				required
+				aria-describedby={error ? 'login-error' : undefined}
 			/>
 		</label>
 		<label class="flex flex-col gap-1">
@@ -66,11 +67,12 @@
 				bind:value={password}
 				autocomplete="current-password"
 				required
+				aria-describedby={error ? 'login-error' : undefined}
 			/>
 		</label>
 
 		{#if error}
-			<p class="text-sm font-semibold text-ink" role="alert">{error}</p>
+			<p id="login-error" class="text-sm font-semibold text-ink" role="alert">{error}</p>
 		{/if}
 
 		<button

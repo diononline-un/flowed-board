@@ -164,3 +164,13 @@ export function updateJournalTemplate(
 	const updated = getJournalTemplateRow(userId, id);
 	return updated ? toPublicJournalTemplate(updated) : null;
 }
+
+// SPEC 6.8 purge: hard-deletes every soft-deleted journal template older than
+// the retention cutoff. Entries survive (template_id goes NULL) because they
+// carry their own name and field snapshot (AC14).
+export function purgeDeleted(olderThanIso: string): number {
+	const result = getDb()
+		.prepare('DELETE FROM journal_templates WHERE deleted_at IS NOT NULL AND deleted_at < ?')
+		.run(olderThanIso);
+	return result.changes;
+}

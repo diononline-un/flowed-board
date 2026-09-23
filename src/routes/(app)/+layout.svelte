@@ -31,23 +31,28 @@
 	});
 </script>
 
-<div class="flex min-h-dvh">
-	<Sidebar />
-	<main class="min-w-0 flex-1">
-		<div class="mx-auto max-w-[1100px] px-4 pt-6 pb-24 md:px-8 md:pb-10">
-			<p class="mb-4 text-sm text-ink-soft">{formatDe(data.today, 'long')}</p>
-			{@render children()}
-		</div>
-	</main>
+<!-- SPEC 11 / P8: `prefs.reduceMotion` switches every non-functional transition
+     off, exactly like the media query does. The class sits on one wrapper that
+     contains the whole shell — tab bar, toasts and overlays included. -->
+<div class:reduce-motion={data.user.prefs.reduceMotion}>
+	<div class="flex min-h-dvh">
+		<Sidebar />
+		<main class="min-w-0 flex-1">
+			<div class="mx-auto max-w-[1100px] px-4 pt-6 pb-24 md:px-8 md:pb-10">
+				<p class="mb-4 text-sm text-ink-soft">{formatDe(data.today, 'long')}</p>
+				{@render children()}
+			</div>
+		</main>
+	</div>
+	<Tabbar />
+	<ToastHost />
+	{#if captureState.open}
+		<CaptureSheet
+			prefs={data.user.prefs}
+			providerName={data.llmProviderName}
+			today={data.today}
+			initialText={captureState.initialText}
+			onclose={closeCapture}
+		/>
+	{/if}
 </div>
-<Tabbar />
-<ToastHost />
-{#if captureState.open}
-	<CaptureSheet
-		prefs={data.user.prefs}
-		providerName={data.llmProviderName}
-		today={data.today}
-		initialText={captureState.initialText}
-		onclose={closeCapture}
-	/>
-{/if}

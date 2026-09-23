@@ -273,6 +273,11 @@
 					maxlength="40"
 					required
 					placeholder={copy.journal.form.namePlaceholder}
+					aria-describedby={localError
+						? 'template-form-error'
+						: error
+							? 'template-save-error'
+							: undefined}
 				/>
 			</label>
 			<label class="flex flex-col gap-1">
@@ -537,10 +542,14 @@
 		</fieldset>
 
 		{#if localError}
-			<p class="text-sm font-semibold text-ink" role="alert">{localError}</p>
+			<p id="template-form-error" class="text-sm font-semibold text-ink" role="alert">
+				{localError}
+			</p>
 		{/if}
 		{#if error}
-			<p class="text-sm font-semibold text-ink" role="alert">{error}</p>
+			<p id="template-save-error" class="text-sm font-semibold text-ink" role="alert">
+				{error}
+			</p>
 		{/if}
 
 		<div class="mt-1 flex items-center justify-end gap-2">

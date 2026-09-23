@@ -88,6 +88,7 @@
 				maxlength="140"
 				required
 				placeholder={formCopy.titlePlaceholder}
+				aria-describedby={error ? 'postit-form-error' : undefined}
 			/>
 		</label>
 		<label class="flex flex-col gap-1">
@@ -169,7 +170,7 @@
 			</div>
 		</fieldset>
 		{#if error}
-			<p class="text-sm font-semibold text-ink" role="alert">{error}</p>
+			<p id="postit-form-error" class="text-sm font-semibold text-ink" role="alert">{error}</p>
 		{/if}
 		<div class="mt-2 flex justify-end gap-2">
 			<button

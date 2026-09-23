@@ -165,7 +165,7 @@
 		{/each}
 
 		{#if error}
-			<p class="text-sm font-semibold text-ink" role="alert">{error}</p>
+			<p id="entry-form-error" class="text-sm font-semibold text-ink" role="alert">{error}</p>
 		{/if}
 
 		<div class="mt-1 flex items-center justify-end gap-2">

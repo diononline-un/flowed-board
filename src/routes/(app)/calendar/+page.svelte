@@ -22,6 +22,7 @@
 		PostitColor,
 		PublicGoal,
 		PublicHabit,
+		PublicHabitLog,
 		PublicPostit
 	} from '$lib/shared/types.js';
 	import type { PageData } from './$types';
@@ -192,11 +193,16 @@
 	// --- Habits -------------------------------------------------------------
 
 	let habits = $state<PublicHabit[]>(data.habits);
+	// Archived habits live in their own, collapsed section so archiving is
+	// reversible from the UI (M7 polish).
+	let archivedHabits = $state<PublicHabit[]>(data.archivedHabits);
+	let showArchived = $state(false);
 	let logDates = $state<Record<string, string[]>>(data.logDates);
 	let busyHabitId = $state<string | null>(null);
 
 	$effect(() => {
 		habits = data.habits;
+		archivedHabits = data.archivedHabits;
 		logDates = data.logDates;
 	});
 
@@ -265,8 +271,20 @@
 		habitSheetOpen = true;
 	}
 
+	// The `archivedAt` flag of the server answer decides which list a habit
+	// belongs to, so archiving and unarchiving both reconcile through here.
 	function replaceHabit(updated: PublicHabit) {
-		habits = habits.map((habit) => (habit.id === updated.id ? updated : habit));
+		const active = updated.archivedAt === null;
+		habits = active
+			? habits.some((habit) => habit.id === updated.id)
+				? habits.map((habit) => (habit.id === updated.id ? updated : habit))
+				: [...habits, updated]
+			: habits.filter((habit) => habit.id !== updated.id);
+		archivedHabits = active
+			? archivedHabits.filter((habit) => habit.id !== updated.id)
+			: archivedHabits.some((habit) => habit.id === updated.id)
+				? archivedHabits.map((habit) => (habit.id === updated.id ? updated : habit))
+				: [...archivedHabits, updated];
 	}
 
 	async function submitHabitForm(payload: HabitFormPayload) {
@@ -302,20 +320,35 @@
 	}
 
 	async function setArchived(habit: PublicHabit, archived: boolean) {
-		const snapshot = habits;
+		const habitSnapshot = habits;
+		const archivedSnapshot = archivedHabits;
+		const dateSnapshot = logDates;
+		busyHabitId = habit.id;
 		habits = archived
 			? habits.filter((entry) => entry.id !== habit.id)
 			: habits.map((entry) => (entry.id === habit.id ? { ...entry, archivedAt: null } : entry));
+		archivedHabits = archived
+			? [...archivedHabits.filter((entry) => entry.id !== habit.id), { ...habit, archivedAt: new Date().toISOString() }]
+			: archivedHabits.filter((entry) => entry.id !== habit.id);
 		const result = await api<{ habit: PublicHabit }>(`/api/habits/${habit.id}`, 'PATCH', {
 			archived
 		});
 		if (!result) {
-			habits = snapshot;
+			habits = habitSnapshot;
+			archivedHabits = archivedSnapshot;
+			logDates = dateSnapshot;
+			busyHabitId = null;
 			pushErrorToast(copy.calendar.log.error);
 			return;
 		}
 		replaceHabit(result.habit);
 		habitSheetOpen = false;
+		if (!archived) {
+			// Back on the bar the progress line needs the log dates again.
+			const logs = await api<{ items: PublicHabitLog[] }>(`/api/habits/${habit.id}/logs`, 'GET');
+			logDates = { ...logDates, [habit.id]: (logs?.items ?? []).map((log) => log.logDate) };
+		}
+		busyHabitId = null;
 		pushToast(archived ? copy.calendar.toast.archived : copy.calendar.toast.unarchived);
 	}
 
@@ -449,6 +482,54 @@
 			{/each}
 		</div>
 	{/if}
+
+	<!-- Archived habits stay reachable: the section is the way back (M7 polish). -->
+	{#if archivedHabits.length > 0 || showArchived}
+		<div class="mt-5 rounded-card border border-paper-dark bg-paper-dark/30 p-4">
+			<div class="flex flex-wrap items-center justify-between gap-2">
+				<h3 class="text-sm font-bold text-ink">
+					{copy.calendar.habitsArchived} ({archivedHabits.length})
+				</h3>
+				<button
+					type="button"
+					class="rounded-pill border border-paper-dark bg-paper px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors duration-fast hover:text-ink"
+					aria-expanded={showArchived}
+					onclick={() => (showArchived = !showArchived)}
+				>
+					{showArchived ? copy.calendar.hideArchived : copy.calendar.showArchived}
+				</button>
+			</div>
+			{#if showArchived}
+				<p class="mt-2 text-xs text-ink-soft">{copy.calendar.archivedHint}</p>
+				{#if archivedHabits.length === 0}
+					<p class="mt-2 text-sm text-ink-soft">{copy.calendar.archivedEmpty}</p>
+				{:else}
+					<ul class="mt-3 flex flex-col gap-2">
+						{#each archivedHabits as habit (habit.id)}
+							<li
+								class="flex flex-wrap items-center justify-between gap-2 rounded-card border border-paper-dark bg-paper px-3 py-2"
+							>
+								<span class="min-w-0 flex-1 truncate text-sm font-semibold text-ink">
+									{habit.emoji ? `${habit.emoji} ` : ''}{habit.title}
+									<span class="ml-1 text-xs font-semibold text-ink-soft">
+										{copy.calendar.form.cadences[habit.cadence]}
+									</span>
+								</span>
+								<button
+									type="button"
+									class="rounded-pill bg-mint px-3 py-1.5 text-xs font-bold text-ink shadow-postit transition-transform duration-fast hover:scale-[1.02] disabled:opacity-50"
+									disabled={busyHabitId === habit.id}
+									onclick={() => void setArchived(habit, false)}
+								>
+									{copy.calendar.restoreHabit}
+								</button>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			{/if}
+		</div>
+	{/if}
 </section>
 
 {#if editingPostit}
@@ -472,7 +553,7 @@
 				<button
 					type="button"
 					class="rounded-card border border-paper-dark bg-paper px-3 py-2 text-left text-sm font-semibold text-ink transition-colors duration-fast hover:bg-paper-dark {postit.doneAt
-						? 'line-through opacity-60'
+						? 'line-through opacity-80'
 						: ''}"
 					onclick={() => {
 						expandedDay = null;

@@ -34,6 +34,9 @@ export const load: PageServerLoad = ({ locals, url }) => {
 
 	const postits = postitsRepo.listPostits(user.id, { from: range.from, to: range.to });
 	const habits = habitsRepo.listHabits(user.id);
+	// Archived habits stay out of the bar but must remain reachable, otherwise
+	// archiving would be a one-way door (M7 polish).
+	const archivedHabits = habitsRepo.listHabits(user.id, { archivedOnly: true });
 	const logDates: Record<string, string[]> = {};
 	for (const habit of habits) {
 		// Logs are needed for the completed-window counters of SPEC 5.5, which
@@ -47,6 +50,7 @@ export const load: PageServerLoad = ({ locals, url }) => {
 		range,
 		postits,
 		habits,
+		archivedHabits,
 		logDates,
 		goals: goalsRepo.listGoals(user.id)
 	};

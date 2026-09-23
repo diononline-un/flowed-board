@@ -237,6 +237,79 @@ describe('postits repo habit side effect (SPEC 5.3)', () => {
 		expect(logs).toHaveLength(1);
 		expect(logs[0]!.log_date).toBe('2026-09-01');
 	});
+
+	// M7 polish (review finding M2): moving the date of a *completed* post-it
+	// has to move its log too, otherwise the counter points at the old day.
+	it('moves the log when the date of a done post-it changes', () => {
+		db = useTestDb();
+		const user = makeUser('po-habit-e');
+		const habitId = makeHabit(user.id);
+		const postit = postitsRepo.createPostit(user.id, {
+			title: 'Training',
+			habitId,
+			date: '2026-09-19'
+		});
+		postitsRepo.updatePostit(user.id, postit.id, { done: true }, TODAY);
+		expect(habitLogsRepo.countForDay(user.id, habitId, '2026-09-19')).toBe(1);
+
+		postitsRepo.updatePostit(user.id, postit.id, { date: '2026-09-20' }, TODAY);
+
+		const logs = habitLogsRepo.listByPostit(user.id, postit.id);
+		expect(logs).toHaveLength(1);
+		expect(logs[0]!.log_date).toBe('2026-09-20');
+		expect(habitLogsRepo.countForDay(user.id, habitId, '2026-09-19')).toBe(0);
+	});
+
+	it('re-links the log when the habit of a done post-it changes', () => {
+		db = useTestDb();
+		const user = makeUser('po-habit-f');
+		const firstHabit = makeHabit(user.id);
+		const secondHabit = makeHabit(user.id);
+		const postit = postitsRepo.createPostit(user.id, {
+			title: 'Lesen',
+			habitId: firstHabit,
+			date: '2026-09-21'
+		});
+		postitsRepo.updatePostit(user.id, postit.id, { done: true }, TODAY);
+
+		postitsRepo.updatePostit(user.id, postit.id, { habitId: secondHabit }, TODAY);
+
+		const logs = habitLogsRepo.listByPostit(user.id, postit.id);
+		expect(logs).toHaveLength(1);
+		expect(logs[0]!.habit_id).toBe(secondHabit);
+		expect(habitLogsRepo.countForDay(user.id, firstHabit, '2026-09-21')).toBe(0);
+		expect(habitLogsRepo.countForDay(user.id, secondHabit, '2026-09-21')).toBe(1);
+	});
+
+	it('drops the log when a done post-it loses its habit', () => {
+		db = useTestDb();
+		const user = makeUser('po-habit-g');
+		const habitId = makeHabit(user.id);
+		const postit = postitsRepo.createPostit(user.id, {
+			title: 'Dehnen',
+			habitId,
+			date: '2026-09-21'
+		});
+		postitsRepo.updatePostit(user.id, postit.id, { done: true }, TODAY);
+
+		postitsRepo.updatePostit(user.id, postit.id, { habitId: null }, TODAY);
+
+		expect(habitLogsRepo.listByPostit(user.id, postit.id)).toHaveLength(0);
+		expect(habitLogsRepo.countForDay(user.id, habitId, '2026-09-21')).toBe(0);
+	});
+
+	it('leaves an open post-it without a log when its date moves', () => {
+		db = useTestDb();
+		const user = makeUser('po-habit-h');
+		const habitId = makeHabit(user.id);
+		const postit = postitsRepo.createPostit(user.id, {
+			title: 'offen',
+			habitId,
+			date: '2026-09-21'
+		});
+		postitsRepo.updatePostit(user.id, postit.id, { date: '2026-09-22' }, TODAY);
+		expect(habitLogsRepo.listByPostit(user.id, postit.id)).toHaveLength(0);
+	});
 });
 
 describe('postits repo tenant separation (SPEC 6.6)', () => {

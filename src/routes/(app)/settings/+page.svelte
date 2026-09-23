@@ -5,12 +5,15 @@
 	import RecoveryScreen from '$lib/components/RecoveryScreen.svelte';
 	import XpBar from '$lib/components/XpBar.svelte';
 	import { copy } from '$lib/shared/copy.js';
+	import { formatDe } from '$lib/shared/date.js';
+	import type { Prefs } from '$lib/shared/schemas.js';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 	const user = $derived(data.user);
 	const accountCopy = copy.settings.account;
 	const gamingCopy = copy.gamification;
+	const appearanceCopy = copy.settings.appearance;
 
 	// Badge grid input: id -> earnedAt for the badges the user owns.
 	const earnedBadges = $derived(
@@ -69,74 +72,61 @@
 		}
 	}
 
-	// AI section (SPEC 9.5): the consent toggle stays changeable here at any
-	// time. Turning it off means every capture text is stored unchanged.
-	let aiEnabled = $state(data.user.prefs.aiEnabled);
-	let aiBusy = $state(false);
-	let aiSaved = $state(false);
-	let aiError = $state('');
+	// SPEC 4.4: showDoneDays is limited to 1|3|7|14.
+	const showDoneOptions: Prefs['showDoneDays'][] = [1, 3, 7, 14];
 
-	async function saveAi() {
-		aiBusy = true;
-		aiSaved = false;
-		aiError = '';
+	// --- SPEC 4.4 prefs ---------------------------------------------------
+	// One optimistic path for every preference: the UI flips immediately, the
+	// PATCH /api/account response (the merged, re-validated prefs) is the
+	// authority, and a failed call rolls the control back.
+	let prefs = $state<Prefs>({ ...data.user.prefs });
+	let prefsBusy = $state(false);
+	let prefsSaved = $state(false);
+	let prefsError = $state('');
+
+	async function savePrefs(patch: Partial<Prefs>) {
+		const snapshot = { ...prefs };
+		prefs = { ...prefs, ...patch };
+		prefsBusy = true;
+		prefsSaved = false;
+		prefsError = '';
 		try {
 			const response = await fetch('/api/account', {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					prefs: {
-						aiEnabled,
-						// First enable without a capture consent counts as consent
-						// here (explicit user decision in settings).
-						...(aiEnabled && !data.user.prefs.aiConsentAt
-							? { aiConsentAt: new Date().toISOString() }
-							: {})
-					}
-				})
+				body: JSON.stringify({ prefs: patch })
 			});
-			if (response.ok) {
-				aiSaved = true;
-				await invalidateAll();
+			const result = (await response.json().catch(() => null)) as {
+				user?: { prefs?: Prefs };
+			} | null;
+			if (!response.ok) {
+				prefs = snapshot;
+				prefsError = copy.errors.generic;
 				return;
 			}
-			aiError = copy.errors.generic;
+			if (result?.user?.prefs) prefs = result.user.prefs;
+			prefsSaved = true;
+			await invalidateAll();
 		} catch {
-			aiError = copy.errors.generic;
+			prefs = snapshot;
+			prefsError = copy.errors.generic;
 		} finally {
-			aiBusy = false;
+			prefsBusy = false;
 		}
 	}
 
-	// Gamification (SPEC 5.6, P7): XP are always recorded, this only controls
-	// whether the UI shows them. Turning it off hides the bar, the level chip
-	// and the toasts — nothing is deleted and no XP are lost.
-	let gamification = $state(data.user.prefs.gamification);
-	let gamingBusy = $state(false);
-	let gamingSaved = $state(false);
-	let gamingError = $state('');
+	// SPEC 9.5: the toggle is free to change at any time. Turning it on for
+	// the first time *is* the consent decision (explicit user action here).
+	function toggleAi(enabled: boolean) {
+		void savePrefs({
+			aiEnabled: enabled,
+			...(enabled && !prefs.aiConsentAt ? { aiConsentAt: new Date().toISOString() } : {})
+		});
+	}
 
-	async function saveGamification() {
-		gamingBusy = true;
-		gamingSaved = false;
-		gamingError = '';
-		try {
-			const response = await fetch('/api/account', {
-				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ prefs: { gamification } })
-			});
-			if (response.ok) {
-				gamingSaved = true;
-				await invalidateAll();
-				return;
-			}
-			gamingError = copy.errors.generic;
-		} catch {
-			gamingError = copy.errors.generic;
-		} finally {
-			gamingBusy = false;
-		}
+	// P7: XP are always recorded — this only controls whether the UI shows them.
+	function toggleGamification(enabled: boolean) {
+		void savePrefs({ gamification: enabled });
 	}
 
 	// Password change (ConfirmDialog, P5 exception).
@@ -405,6 +395,74 @@
 
 	<section
 		class="rounded-card border border-paper-dark bg-paper p-6 shadow-postit"
+		aria-labelledby="appearance-heading"
+	>
+		<h2 id="appearance-heading" class="text-xl font-bold text-ink">
+			{appearanceCopy.title}
+		</h2>
+		<p class="mt-1 max-w-xl text-sm text-ink-soft">{appearanceCopy.hint}</p>
+
+		<div class="mt-4 flex flex-col gap-4">
+			<div>
+				<label class="flex items-center gap-2 text-sm font-semibold text-ink">
+					<input
+						type="checkbox"
+						class="h-4 w-4 accent-ink"
+						checked={prefs.postitTilt}
+						onchange={(event) => void savePrefs({ postitTilt: event.currentTarget.checked })}
+						disabled={prefsBusy}
+					/>
+					{appearanceCopy.postitTilt}
+				</label>
+				<p class="mt-1 ml-6 text-xs text-ink-soft">{appearanceCopy.postitTiltHint}</p>
+			</div>
+
+			<div>
+				<label class="flex items-center gap-2 text-sm font-semibold text-ink">
+					<input
+						type="checkbox"
+						class="h-4 w-4 accent-ink"
+						checked={prefs.reduceMotion}
+						onchange={(event) => void savePrefs({ reduceMotion: event.currentTarget.checked })}
+						disabled={prefsBusy}
+					/>
+					{appearanceCopy.reduceMotion}
+				</label>
+				<p class="mt-1 ml-6 text-xs text-ink-soft">{appearanceCopy.reduceMotionHint}</p>
+			</div>
+
+			<label class="flex flex-col gap-1">
+				<span class="text-sm font-semibold text-ink">{appearanceCopy.showDoneDays}</span>
+				<select
+					class="max-w-sm rounded-lg border border-paper-dark bg-paper px-3 py-2 text-ink"
+					value={String(prefs.showDoneDays)}
+					onchange={(event) =>
+						void savePrefs({
+							showDoneDays: Number(event.currentTarget.value) as Prefs['showDoneDays']
+						})}
+					disabled={prefsBusy}
+					aria-describedby="show-done-hint"
+				>
+					{#each showDoneOptions as days (days)}
+						<option value={String(days)}>{appearanceCopy.showDoneDaysOptions[days]}</option>
+					{/each}
+				</select>
+				<span id="show-done-hint" class="text-xs text-ink-soft">
+					{appearanceCopy.showDoneDaysHint}
+				</span>
+			</label>
+		</div>
+
+		{#if prefsSaved}
+			<p class="mt-3 text-sm font-semibold text-ink" role="status">{accountCopy.saved}</p>
+		{/if}
+		{#if prefsError}
+			<p class="mt-3 text-sm font-semibold text-ink" role="alert">{prefsError}</p>
+		{/if}
+	</section>
+
+	<section
+		class="rounded-card border border-paper-dark bg-paper p-6 shadow-postit"
 		aria-labelledby="ai-heading"
 	>
 		<h2 id="ai-heading" class="text-xl font-bold text-ink">
@@ -415,19 +473,35 @@
 			<input
 				type="checkbox"
 				class="h-4 w-4 accent-ink"
-				bind:checked={aiEnabled}
-				onchange={saveAi}
-				disabled={aiBusy}
+				checked={prefs.aiEnabled}
+				onchange={(event) => toggleAi(event.currentTarget.checked)}
+				disabled={prefsBusy}
 			/>
 			{copy.capture.settingsToggle}
 		</label>
-		{#if aiSaved}
+
+		<!-- SPEC 9.5: consent stays informed — when it was given and what the
+		     provider actually receives. -->
+		<div class="mt-4 max-w-xl rounded-card bg-paper-dark/40 px-4 py-3">
+			<p class="text-sm font-bold text-ink">{copy.capture.settingsDataTitle}</p>
+			<p class="mt-1 text-sm text-ink">{copy.capture.settingsDataSends}</p>
+			<p class="mt-1 text-sm text-ink">{copy.capture.settingsDataNever}</p>
+			<p class="mt-2 text-xs font-semibold text-ink">
+				{#if prefs.aiConsentAt}
+					{copy.capture.settingsConsentAt(formatDe(prefs.aiConsentAt.slice(0, 10), 'long'))}
+				{:else}
+					{copy.capture.settingsConsentMissing}
+				{/if}
+			</p>
+		</div>
+
+		{#if prefsSaved}
 			<p class="mt-2 text-sm font-semibold text-ink" role="status">
 				{copy.capture.settingsSaved}
 			</p>
 		{/if}
-		{#if aiError}
-			<p class="mt-2 text-sm font-semibold text-ink" role="alert">{aiError}</p>
+		{#if prefsError}
+			<p class="mt-2 text-sm font-semibold text-ink" role="alert">{prefsError}</p>
 		{/if}
 	</section>
 
@@ -443,22 +517,22 @@
 			<input
 				type="checkbox"
 				class="h-4 w-4 accent-ink"
-				bind:checked={gamification}
-				onchange={saveGamification}
-				disabled={gamingBusy}
+				checked={prefs.gamification}
+				onchange={(event) => toggleGamification(event.currentTarget.checked)}
+				disabled={prefsBusy}
 			/>
 			{gamingCopy.settingsToggle}
 		</label>
-		{#if gamingSaved}
+		{#if prefsSaved}
 			<p class="mt-2 text-sm font-semibold text-ink" role="status">
 				{accountCopy.saved}
 			</p>
 		{/if}
-		{#if gamingError}
-			<p class="mt-2 text-sm font-semibold text-ink" role="alert">{gamingError}</p>
+		{#if prefsError}
+			<p class="mt-2 text-sm font-semibold text-ink" role="alert">{prefsError}</p>
 		{/if}
 
-		{#if gamification}
+		{#if prefs.gamification}
 			<div class="mt-5 max-w-md">
 				<XpBar total={data.xp.total} />
 			</div>

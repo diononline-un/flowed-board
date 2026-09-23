@@ -252,7 +252,18 @@ export function updatePostit(
 		});
 	const updated = getPostit(userId, id);
 	if (!updated) return null;
-	if (patch.done !== undefined && patch.done !== (current.done_at !== null)) {
+	const doneChanged = patch.done !== undefined && patch.done !== (current.done_at !== null);
+	// Moving the date or re-linking a *completed* post-it moves its habit log
+	// too (SPEC 5.3: log_date = date of the post-it, one log per post-it): the
+	// old log is dropped first so the new habit/date combination gets a fresh
+	// one instead of the stale row being returned as "already there".
+	const linkChanged =
+		(patch.date !== undefined && patch.date !== current.date) ||
+		(patch.habitId !== undefined && patch.habitId !== current.habit_id);
+	if (doneChanged) {
+		syncHabitLog(updated, today);
+	} else if (linkChanged && updated.done_at !== null && updated.deleted_at === null) {
+		habitLogsRepo.removeByPostit(userId, id);
 		syncHabitLog(updated, today);
 	}
 	return toPublicPostit(updated);
@@ -360,4 +371,15 @@ export function cleanupPostits(
 		if (updated) touched.push(updated);
 	}
 	return touched;
+}
+
+// SPEC 6.8 purge: hard-deletes every soft-deleted post-it older than the
+// retention cutoff. Only rows that are *already* soft-deleted are touched, so
+// nothing live can disappear here; the habit-log side effect is gone with the
+// row (habit_logs.postit_id cascades).
+export function purgeDeleted(olderThanIso: string): number {
+	const result = getDb()
+		.prepare('DELETE FROM postits WHERE deleted_at IS NOT NULL AND deleted_at < ?')
+		.run(olderThanIso);
+	return result.changes;
 }

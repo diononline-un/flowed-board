@@ -25,13 +25,10 @@ export const POST: RequestHandler = async (event) => {
 	if (!user) return unauthorized();
 	const parsed = await parseJson(habitCreateSchema, event.request);
 	if (!parsed.ok) return parsed.response;
-	if (parsed.data.goalId) {
-		const goal = goalsRepo.getGoal(user.id, parsed.data.goalId);
-		if (!goal || goal.deleted_at !== null) {
-			return validationError(copy.errors.invalidInput, {
-				goalId: copy.plans.errors.foreignRef
-			});
-		}
+	if (parsed.data.goalId && !goalsRepo.getLiveGoal(user.id, parsed.data.goalId)) {
+		return validationError(copy.errors.invalidInput, {
+			goalId: copy.plans.errors.foreignRef
+		});
 	}
 	const habit = habitsRepo.createHabit(user.id, parsed.data);
 	return ok({ habit }, 201);

@@ -22,8 +22,7 @@ const schema = z.object({
 	HOSTING_COUNTRY: z.string().min(1).default('Deutschland'),
 	ADDRESS_HEADER: z.string().default(''),
 	XFF_DEPTH: z.coerce.number().int().min(0).max(10).default(1),
-	BODY_SIZE_LIMIT: z.coerce.number().int().min(1024).default(524288),
-	BACKUP_DIR: z.string().min(1).default('/data/backups')
+	BODY_SIZE_LIMIT: z.coerce.number().int().min(1024).default(524288)
 });
 
 const parsed = schema.safeParse(process.env);

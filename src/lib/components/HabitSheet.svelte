@@ -115,6 +115,7 @@
 				maxlength="80"
 				required
 				placeholder={formCopy.titlePlaceholder}
+				aria-describedby={error ? 'habit-form-error' : undefined}
 			/>
 		</label>
 		<div class="grid grid-cols-2 gap-3">
@@ -230,7 +231,7 @@
 			</div>
 		</fieldset>
 		{#if error}
-			<p class="text-sm font-semibold text-ink" role="alert">{error}</p>
+			<p id="habit-form-error" class="text-sm font-semibold text-ink" role="alert">{error}</p>
 		{/if}
 		<div class="mt-2 flex flex-wrap items-center justify-end gap-2">
 			{#if habit && ondelete}

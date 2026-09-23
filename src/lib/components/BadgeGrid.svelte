@@ -26,7 +26,7 @@
 		<li
 			class="flex flex-col items-center gap-1 rounded-card border px-3 py-4 text-center {badge.earnedAt
 				? 'border-lilac bg-lilac/30'
-				: 'border-paper-dark bg-paper opacity-70'}"
+				: 'border-paper-dark border-dashed bg-paper-dark/40'}"
 		>
 			<span class="text-2xl" aria-hidden="true">{badge.emoji}</span>
 			<span class="text-sm font-bold text-ink">{badge.name}</span>

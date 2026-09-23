@@ -95,16 +95,21 @@
 
 <div class="transition-transform duration-fast hover:scale-[1.02]" role="listitem">
 	<article
-		class="relative rounded-card shadow-postit {done ? 'opacity-60' : ''}"
+		class="relative rounded-card shadow-postit {done ? 'opacity-80' : ''}"
 		style:background="linear-gradient(160deg, #FFFDF7 0%, #FBF3E0 100%)"
 		style:transform={tilt ? `rotate(${tiltDeg}deg)` : undefined}
 	>
 		<span
 			class="absolute inset-y-0 left-0 w-1.5 rounded-l-card"
 			style:background-color="var(--color-{stripeColor})"
-			title={goal?.title}
+			title={goal ? copy.plans.goalTooltip(goal.title) : undefined}
 			aria-hidden="true"
 		></span>
+		<!-- SPEC 11: the stripe colour never carries meaning alone — the goal
+		     name travels with it as tooltip and as screen-reader text. -->
+		{#if goal}
+			<span class="sr-only">{copy.plans.goalTooltip(goal.title)}</span>
+		{/if}
 		<div class="flex items-start gap-2 py-3 pr-2 pl-4">
 			<button
 				type="button"

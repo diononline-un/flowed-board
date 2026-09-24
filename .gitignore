@@ -1,0 +1,13 @@
+node_modules
+build
+.svelte-kit
+/data
+.env
+.sdd
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+# static/icons/ is committed on purpose: a checkout ships a complete PWA
+# manifest, even though `npm run icons` regenerates the files byte-identically.
+.npm-cache

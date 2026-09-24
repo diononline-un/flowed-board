@@ -1,0 +1,57 @@
+@import '@fontsource-variable/nunito';
+@import '@fontsource-variable/caveat';
+@import 'tailwindcss';
+
+/* Design tokens (SPEC 10.1) — verbatim. */
+@theme {
+	--color-paper: #FBF6EE;       --color-paper-dark: #F2EADA;
+	--color-ink: #3A2E22;         --color-ink-soft: #6B5C4C;
+	--color-butter: #FFE3A3;      --color-mint: #C8E6D0;
+	--color-sky: #C9E1F0;         --color-blush: #F4CFC6;
+	--color-sand: #E8C79A;        --color-sage: #A9C0A0;
+	--color-lilac: #DAD0EE;
+	--radius-card: 1.1rem;        --radius-pill: 999px;
+	--shadow-postit: 0 2px 6px rgba(58,46,34,0.10), 0 1px 2px rgba(58,46,34,0.06);
+	--font-hand: 'Caveat Variable', cursive;
+	--font-body: 'Nunito Variable', sans-serif;
+	--duration-fast: 150ms;  --duration-base: 220ms;  --duration-slow: 340ms;
+}
+
+html {
+	background-color: var(--color-paper);
+}
+
+body {
+	background-color: var(--color-paper);
+	color: var(--color-ink);
+	font-family: var(--font-body);
+}
+
+/* Visible focus ring on ink (SPEC 11). */
+:focus-visible {
+	outline: 2px solid var(--color-ink);
+	outline-offset: 2px;
+}
+
+/* Reduced motion kills every non-functional transition (SPEC 11) — once by
+   system preference and once by the in-app prefs.reduceMotion switch, which
+   puts .reduce-motion on the app shell wrapper. Both paths share one rule. */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		transition-duration: 0.01ms !important;
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+	}
+}
+
+.reduce-motion,
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+	transition-duration: 0.01ms !important;
+	animation-duration: 0.01ms !important;
+	animation-iteration-count: 1 !important;
+	scroll-behavior: auto !important;
+}
